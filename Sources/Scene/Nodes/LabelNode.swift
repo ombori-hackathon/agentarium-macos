@@ -13,7 +13,7 @@ class LabelNode: SCNNode {
 
         // Billboard constraint - always face camera
         let billboardConstraint = SCNBillboardConstraint()
-        billboardConstraint.freeAxes = [.Y] // Only rotate around Y axis
+        billboardConstraint.freeAxes = [.Y]  // Only rotate around Y axis
         constraints = [billboardConstraint]
     }
 
@@ -27,12 +27,12 @@ class LabelNode: SCNNode {
 
         // Create 3D text geometry
         let textGeometry = SCNText(string: text, extrusionDepth: 0.1)
-        textGeometry.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular) // SF Mono, 12pt
+        textGeometry.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)  // SF Mono, 12pt
         textGeometry.flatness = 0.1
 
         // Green material
         let material = SCNMaterial()
-        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88/255.0, alpha: 1.0) // #00ff88
+        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 1.0)  // #00ff88
         material.lightingModel = .constant
         textGeometry.materials = [material]
 

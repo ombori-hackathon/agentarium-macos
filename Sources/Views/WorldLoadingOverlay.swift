@@ -33,4 +33,3 @@ struct WorldLoadingOverlay: View {
         .allowsHitTesting(false)
     }
 }
-

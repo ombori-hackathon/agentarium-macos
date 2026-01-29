@@ -19,7 +19,7 @@ class FileNode: SCNNode {
 
         // Green at 60% opacity
         let material = SCNMaterial()
-        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88/255.0, alpha: 0.6) // #00ff88 at 60%
+        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.6)  // #00ff88 at 60%
         material.lightingModel = .blinn
         material.transparency = 0.6
 

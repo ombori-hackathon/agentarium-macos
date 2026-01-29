@@ -1,5 +1,5 @@
-@preconcurrency import SceneKit
 import AppKit
+@preconcurrency import SceneKit
 
 class ThoughtBubbleNode: SCNNode {
     private var backgroundNode: SCNNode!
@@ -76,7 +76,7 @@ class ThoughtBubbleNode: SCNNode {
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: NSColor.darkGray,
-            .paragraphStyle: paragraphStyle
+            .paragraphStyle: paragraphStyle,
         ]
 
         // Wrap text to max width
