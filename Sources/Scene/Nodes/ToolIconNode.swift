@@ -2,8 +2,8 @@ import SceneKit
 import AppKit
 
 class ToolIconNode: SCNNode {
-    private let yOffset: Float = 3.0
-    private let iconSize: CGFloat = 1.5
+    private let yOffset: Float = 2.2  // Adjusted for smaller mascot-style agent
+    private let iconSize: CGFloat = 1.0  // Smaller icon for smaller agent
 
     init(toolName: String) {
         super.init()
