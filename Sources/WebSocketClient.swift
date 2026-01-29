@@ -15,6 +15,8 @@ class WebSocketClient: ObservableObject {
     var onAgentEvent: ((AgentEvent) -> Void)?
     var onAgentSpawn: ((AgentSpawn) -> Void)?
     var onAgentDespawn: ((AgentDespawn) -> Void)?
+    var onTerrainLoading: ((TerrainLoading) -> Void)?
+    var onTerrainComplete: ((TerrainComplete) -> Void)?
 
     init(url: URL = URL(string: "ws://localhost:8000/ws")!) {
         self.url = url
@@ -117,6 +119,28 @@ class WebSocketClient: ObservableObject {
                 let despawn = try JSONDecoder().decode(AgentDespawn.self, from: data)
                 print("Received agent despawn: \(despawn.agentId)")
                 onAgentDespawn?(despawn)
+
+            case "terrain_loading":
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                guard let messageData = json?["data"] else {
+                    print("Invalid terrain_loading message format")
+                    return
+                }
+                let dataJson = try JSONSerialization.data(withJSONObject: messageData)
+                let loading = try JSONDecoder().decode(TerrainLoading.self, from: dataJson)
+                print("Received terrain loading: \(loading.cwd)")
+                onTerrainLoading?(loading)
+
+            case "terrain_complete":
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                guard let messageData = json?["data"] else {
+                    print("Invalid terrain_complete message format")
+                    return
+                }
+                let dataJson = try JSONSerialization.data(withJSONObject: messageData)
+                let complete = try JSONDecoder().decode(TerrainComplete.self, from: dataJson)
+                print("Received terrain complete: \(complete.folderCount) folders, \(complete.fileCount) files")
+                onTerrainComplete?(complete)
 
             default:
                 print("Unknown message type: \(typeWrapper.type)")

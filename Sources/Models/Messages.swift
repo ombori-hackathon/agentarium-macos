@@ -128,6 +128,38 @@ struct AgentDespawn: Codable {
     }
 }
 
+// MARK: - Terrain Loading
+
+struct TerrainLoading: Codable {
+    let type: String
+    let sessionId: String
+    let cwd: String
+    let message: String
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case sessionId = "session_id"
+        case cwd
+        case message
+    }
+}
+
+// MARK: - Terrain Complete
+
+struct TerrainComplete: Codable {
+    let type: String
+    let sessionId: String
+    let folderCount: Int
+    let fileCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case sessionId = "session_id"
+        case folderCount = "folder_count"
+        case fileCount = "file_count"
+    }
+}
+
 // MARK: - Helper for Dynamic JSON
 
 struct AnyCodable: Codable {
