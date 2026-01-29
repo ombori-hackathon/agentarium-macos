@@ -11,7 +11,8 @@ class TerrainScene: SCNScene {
     private var currentlyHighlighted: Set<String> = []
 
     // Agent target highlighting (separate from hover highlights)
-    private var agentHighlightedPath: String?
+    private var agentHighlightedFolder: String?
+    private var agentHighlightedFile: String?
 
     // Label tracking
     private var currentlyLabeledNode: SCNNode?
@@ -263,71 +264,29 @@ class TerrainScene: SCNScene {
     }
 
     private func handleMoveEvent(agent: AgentNode, event: AgentEvent) {
-        guard let targetPosition = event.targetPosition else {
-            print("Move event missing target position")
-            return
-        }
-
-        let target = SCNVector3(
-            Float(targetPosition.x),
-            Float(targetPosition.y),
-            Float(targetPosition.z)
-        )
-
-        // Thought bubble disabled - using activity log instead
-        // if let thought = event.thought {
-        //     agent.updateThought(thought)
-        // }
-
-        // File path label disabled - using activity log instead
-        // if let targetPath = event.targetPath {
-        //     agent.updateFilePath(targetPath)
-        // }
+        // Movement is now handled by ContentView via highlightAgentTarget() + moveAgent()
+        // This method only handles tool icon display
 
         // Show tool icon if provided
         if let toolName = event.toolName {
             agent.showToolIcon(toolName)
         }
-
-        // Move to target (duration calculated automatically)
-        agent.moveTo(position: target) {
-            // Hide tool icon after arrival
-            agent.hideToolIcon()
-        }
     }
 
     private func handleToolEvent(agent: AgentNode, event: AgentEvent) {
-        // Thought bubble disabled - using activity log instead
-        // if let thought = event.thought {
-        //     agent.updateThought(thought)
-        // }
-
-        // File path label disabled - using activity log instead
-        // if let targetPath = event.targetPath {
-        //     agent.updateFilePath(targetPath)
-        // }
+        // Movement is now handled by ContentView via highlightAgentTarget() + moveAgent()
+        // This method only handles tool icon display
 
         // Show tool icon
         if let toolName = event.toolName {
             agent.showToolIcon(toolName)
 
-            // Auto-hide after 2 seconds - do it with an action instead
+            // Auto-hide after 2 seconds
             let waitAction = SCNAction.wait(duration: 2.0)
             let hideAction = SCNAction.run { _ in
                 agent.hideToolIcon()
             }
             agent.runAction(SCNAction.sequence([waitAction, hideAction]), forKey: "auto_hide_tool")
-        }
-
-        // Move to target if position provided
-        if let targetPosition = event.targetPosition {
-            let target = SCNVector3(
-                Float(targetPosition.x),
-                Float(targetPosition.y),
-                Float(targetPosition.z)
-            )
-
-            agent.moveTo(position: target)
         }
     }
 
@@ -427,48 +386,58 @@ class TerrainScene: SCNScene {
 
     // MARK: - Agent Target Highlighting
 
-    /// Highlights a top-level folder for the given path and returns the folder's position
+    /// Highlights the file and its containing folder, returns the folder's position
     /// so the agent can move to it. Returns nil if no folder found.
     func highlightAgentTarget(path: String?) -> SCNVector3? {
-        // Clear previous agent highlight
-        if let prevPath = agentHighlightedPath {
-            if let folder = folderNodes[prevPath] {
-                folder.setHighlighted(false)
-            }
+        // Clear previous agent highlights
+        if let prevFolder = agentHighlightedFolder {
+            folderNodes[prevFolder]?.setHighlighted(false)
+        }
+        if let prevFile = agentHighlightedFile {
+            fileNodes[prevFile]?.setHighlighted(false)
         }
 
-        // Find the folder to highlight
         guard let targetPath = path else {
-            agentHighlightedPath = nil
+            agentHighlightedFolder = nil
+            agentHighlightedFile = nil
             return nil
         }
 
-        // If it's a file, get its containing folder
-        var folderPath = targetPath
+        // Determine folder and file to highlight
+        var folderPath: String
+        var filePath: String?
+
         if fileNodes[targetPath] != nil {
+            // Target is a file - highlight both file and its folder
+            filePath = targetPath
             folderPath = (targetPath as NSString).deletingLastPathComponent
-        }
-
-        // Walk up to find the highest-level folder that exists (closest to project root)
-        // This gives us a top-level folder for broad highlighting
-        var currentPath = folderPath
-        var topLevelFolder: String?
-
-        while !currentPath.isEmpty && currentPath != "/" {
-            if folderNodes[currentPath] != nil {
-                topLevelFolder = currentPath  // Keep going up, always prefer higher
+        } else if folderNodes[targetPath] != nil {
+            // Target is a folder - just highlight the folder
+            folderPath = targetPath
+        } else {
+            // Path doesn't exist in our nodes, try to find containing folder
+            folderPath = (targetPath as NSString).deletingLastPathComponent
+            while !folderPath.isEmpty && folderPath != "/" && folderNodes[folderPath] == nil {
+                folderPath = (folderPath as NSString).deletingLastPathComponent
             }
-            currentPath = (currentPath as NSString).deletingLastPathComponent
         }
 
-        // Set new highlight and return position
-        agentHighlightedPath = topLevelFolder
-        if let folderToHighlight = topLevelFolder,
-            let folder = folderNodes[folderToHighlight]
-        {
-            folder.setHighlighted(true)
-            return folder.position
+        // Highlight file if we have one
+        if let file = filePath, let fileNode = fileNodes[file] {
+            fileNode.setHighlighted(true)
+            agentHighlightedFile = file
+        } else {
+            agentHighlightedFile = nil
         }
+
+        // Highlight folder and return its position
+        if let folderNode = folderNodes[folderPath] {
+            folderNode.setHighlighted(true)
+            agentHighlightedFolder = folderPath
+            return folderNode.position
+        }
+
+        agentHighlightedFolder = nil
         return nil
     }
 

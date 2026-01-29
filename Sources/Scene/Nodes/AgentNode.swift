@@ -12,8 +12,7 @@ class AgentNode: SCNNode {
     private var isWalking = false
     private var isIdling = false
 
-    // Movement queue for handling rapid events
-    private var movementQueue: [(position: SCNVector3, duration: TimeInterval)] = []
+    // Movement state
     private var isMoving = false
 
     init(color: String = "#c08060") {
@@ -219,6 +218,9 @@ class AgentNode: SCNNode {
     // MARK: - Movement
 
     func moveTo(position: SCNVector3, duration: TimeInterval = 0, completion: (() -> Void)? = nil) {
+        // Cancel any in-progress movement - skip to latest target
+        removeAction(forKey: "agent_move")
+
         // Calculate duration based on distance if not provided
         let finalDuration: TimeInterval
         if duration > 0 {
@@ -227,42 +229,21 @@ class AgentNode: SCNNode {
             let distance = self.position.distance(to: position)
             let speed: Float = 10.0  // units per second
             var calculatedDuration = TimeInterval(distance / speed)
-            calculatedDuration = max(0.3, min(calculatedDuration, 2.0))
+            calculatedDuration = max(0.2, min(calculatedDuration, 1.5))  // Faster response
             finalDuration = calculatedDuration
         }
 
-        // Add to queue
-        movementQueue.append((position: position, duration: finalDuration))
-        processMovementQueue(completion: completion)
-    }
-
-    private func processMovementQueue(completion: (() -> Void)? = nil) {
-        guard !isMoving, let nextMove = movementQueue.first else {
-            if movementQueue.isEmpty {
-                completion?()
-            }
-            return
-        }
-
+        // Start moving
         isMoving = true
-        movementQueue.removeFirst()
-
         startWalkAnimation()
 
-        let moveAction = SCNAction.move(to: nextMove.position, duration: nextMove.duration)
+        let moveAction = SCNAction.move(to: position, duration: finalDuration)
         moveAction.timingMode = .easeInEaseOut
 
-        runAction(moveAction) { [weak self] in
-            guard let self = self else { return }
-            self.stopWalkAnimation()
-            self.isMoving = false
-
-            // Process next move in queue
-            if !self.movementQueue.isEmpty {
-                self.processMovementQueue(completion: completion)
-            } else {
-                completion?()
-            }
+        runAction(moveAction, forKey: "agent_move") { [weak self] in
+            self?.stopWalkAnimation()
+            self?.isMoving = false
+            completion?()
         }
     }
 
