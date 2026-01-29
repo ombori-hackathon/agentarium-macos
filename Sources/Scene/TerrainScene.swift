@@ -10,6 +10,9 @@ class TerrainScene: SCNScene {
     private var folderFiles: [String: Set<String>] = [:]  // folder path -> file paths
     private var currentlyHighlighted: Set<String> = []
 
+    // Agent target highlighting (separate from hover highlights)
+    private var agentHighlightedPath: String?
+
     // Label tracking
     private var currentlyLabeledNode: SCNNode?
 
@@ -266,10 +269,10 @@ class TerrainScene: SCNScene {
             Float(targetPosition.z)
         )
 
-        // Update thought if provided
-        if let thought = event.thought {
-            agent.updateThought(thought)
-        }
+        // Thought bubble disabled - using activity log instead
+        // if let thought = event.thought {
+        //     agent.updateThought(thought)
+        // }
 
         // Update file path label if provided
         if let targetPath = event.targetPath {
@@ -289,10 +292,10 @@ class TerrainScene: SCNScene {
     }
 
     private func handleToolEvent(agent: AgentNode, event: AgentEvent) {
-        // Update thought
-        if let thought = event.thought {
-            agent.updateThought(thought)
-        }
+        // Thought bubble disabled - using activity log instead
+        // if let thought = event.thought {
+        //     agent.updateThought(thought)
+        // }
 
         // Update file path label if provided
         if let targetPath = event.targetPath {
@@ -324,12 +327,12 @@ class TerrainScene: SCNScene {
     }
 
     private func handleIdleEvent(agent: AgentNode, event: AgentEvent) {
-        // Update thought if provided
-        if let thought = event.thought {
-            agent.updateThought(thought)
-        } else {
-            agent.clearThought()
-        }
+        // Thought bubble disabled - using activity log instead
+        // if let thought = event.thought {
+        //     agent.updateThought(thought)
+        // } else {
+        //     agent.clearThought()
+        // }
 
         // Make sure idle animation is running
         agent.startIdleAnimation()
@@ -415,6 +418,31 @@ class TerrainScene: SCNScene {
             }
         }
         currentlyHighlighted.removeAll()
+    }
+
+    // MARK: - Agent Target Highlighting
+
+    func highlightAgentTarget(path: String?) {
+        // Clear previous agent highlight
+        if let prevPath = agentHighlightedPath {
+            if let folder = folderNodes[prevPath] {
+                folder.setHighlighted(false)
+            }
+            if let file = fileNodes[prevPath] {
+                file.setHighlighted(false)
+            }
+        }
+
+        // Set new highlight
+        agentHighlightedPath = path
+        if let newPath = path {
+            if let folder = folderNodes[newPath] {
+                folder.setHighlighted(true)
+            }
+            if let file = fileNodes[newPath] {
+                file.setHighlighted(true)
+            }
+        }
     }
 
     // MARK: - Label Management
