@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct DirectoryPicker: View {
     @Binding var selectedPath: String?

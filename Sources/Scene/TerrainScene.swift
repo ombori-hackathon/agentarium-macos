@@ -16,7 +16,7 @@ class TerrainScene: SCNScene {
 
     private func setupScene() {
         // Background color: #0a0a12
-        background.contents = NSColor(red: 0x0a/255.0, green: 0x0a/255.0, blue: 0x12/255.0, alpha: 1.0)
+        background.contents = NSColor(red: 0x0a / 255.0, green: 0x0a / 255.0, blue: 0x12 / 255.0, alpha: 1.0)
 
         // Fog
         fogStartDistance = 50
@@ -134,7 +134,8 @@ class TerrainScene: SCNScene {
                 let fadeIn = SCNAction.fadeIn(duration: 0.2)
                 let delayAction = SCNAction.wait(duration: delay)
                 // Use completion handler version to fire-and-forget
-                node.runAction(SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]), completionHandler: nil)
+                node.runAction(
+                    SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]), completionHandler: nil)
                 delay += staggerIncrement
             }
         }
@@ -150,7 +151,8 @@ class TerrainScene: SCNScene {
                 let fadeIn = SCNAction.fadeIn(duration: 0.2)
                 let delayAction = SCNAction.wait(duration: delay)
                 // Use completion handler version to fire-and-forget
-                node.runAction(SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]), completionHandler: nil)
+                node.runAction(
+                    SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]), completionHandler: nil)
                 delay += staggerIncrement
             }
         }
@@ -164,11 +166,13 @@ class TerrainScene: SCNScene {
 
     @MainActor
     func nodeInfo(at point: CGPoint, in view: SCNView) -> (name: String, path: String)? {
-        let hitResults = view.hitTest(point, options: [
-            .boundingBoxOnly: false,
-            .firstFoundOnly: true,
-            .ignoreHiddenNodes: true
-        ])
+        let hitResults = view.hitTest(
+            point,
+            options: [
+                .boundingBoxOnly: false,
+                .firstFoundOnly: true,
+                .ignoreHiddenNodes: true,
+            ])
 
         guard let firstHit = hitResults.first else { return nil }
 

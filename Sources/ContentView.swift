@@ -1,5 +1,5 @@
-import SwiftUI
 import SceneKit
+import SwiftUI
 
 struct ContentView: View {
     @State private var terrainScene = TerrainScene()
@@ -36,7 +36,7 @@ struct ContentView: View {
                         .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(red: 0x0a/255.0, green: 0x0a/255.0, blue: 0x12/255.0))
+                .background(Color(red: 0x0a / 255.0, green: 0x0a / 255.0, blue: 0x12 / 255.0))
             } else {
                 SceneViewWrapper(
                     scene: terrainScene,

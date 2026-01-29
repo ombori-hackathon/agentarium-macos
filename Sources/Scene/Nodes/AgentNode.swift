@@ -3,6 +3,7 @@
 class AgentNode: SCNNode {
     private var bodyNode: SCNNode!
     private var legNodes: [SCNNode] = []
+    private var armNodes: [SCNNode] = []
     private var glowNode: SCNNode!
     private var thoughtBubble: ThoughtBubbleNode?
     private var toolIcon: ToolIconNode?
@@ -15,15 +16,16 @@ class AgentNode: SCNNode {
     private var movementQueue: [(position: SCNVector3, duration: TimeInterval)] = []
     private var isMoving = false
 
-    init(color: String = "#e07850") {
+    init(color: String = "#c08060") {
         super.init()
 
-        // Parse color
+        // Parse color - using warmer terracotta like the pixel art
         let nsColor = parseColor(color)
-        let darkerColor = darkenColor(nsColor, factor: 0.8)
+        let darkerColor = darkenColor(nsColor, factor: 0.75)
 
         setupBody(color: nsColor)
         setupEyes()
+        setupArms(color: darkerColor)
         setupLegs(color: darkerColor)
         setupGlow(color: nsColor)
     }
@@ -35,29 +37,25 @@ class AgentNode: SCNNode {
     // MARK: - Setup
 
     private func setupBody(color: NSColor) {
-        // Body: Rounded blob shape like Claude Code mascot (50% scale)
-        // Target: wider than tall, very rounded - using sphere squashed vertically
-        let body = SCNSphere(radius: 1.0)
-        body.segmentCount = 32
+        // Body: Rectangular box like pixel art mascot
+        // Dimensions: 1.4W × 1.0H × 0.8D with minimal chamfer for blocky look
+        let body = SCNBox(width: 1.4, height: 1.0, length: 0.8, chamferRadius: 0.05)
 
         let material = SCNMaterial()
         material.diffuse.contents = color
-        material.emission.contents = color.withAlphaComponent(0.2)
+        material.emission.contents = color.withAlphaComponent(0.15)
         material.lightingModel = .physicallyBased
 
         body.materials = [material]
 
         bodyNode = SCNNode(geometry: body)
-        // Scale to make it wider than tall (blob shape): 1.5W × 1.0H × 1.0D
-        bodyNode.scale = SCNVector3(1.5, 1.0, 1.0)
-        bodyNode.position = SCNVector3(0, 1.0 + 0.4, 0) // Half body height + leg height
+        bodyNode.position = SCNVector3(0, 0.5 + 0.3, 0)  // Half body height + leg height
         addChildNode(bodyNode)
     }
 
     private func setupEyes() {
-        // Two small round dot eyes like mascot (50% scale)
-        let eyeGeometry = SCNSphere(radius: 0.12)
-        eyeGeometry.segmentCount = 16
+        // Two small square eyes like pixel art
+        let eyeGeometry = SCNBox(width: 0.15, height: 0.15, length: 0.05, chamferRadius: 0.0)
 
         let material = SCNMaterial()
         material.diffuse.contents = NSColor.black
@@ -65,20 +63,43 @@ class AgentNode: SCNNode {
 
         eyeGeometry.materials = [material]
 
-        // Left eye - positioned in upper area, accounting for body's x-scale of 1.5
+        // Left eye - positioned in upper area of face
         let leftEye = SCNNode(geometry: eyeGeometry)
-        leftEye.position = SCNVector3(-0.2 / 1.5, 0.25, 0.95) // Divide x by body scale
+        leftEye.position = SCNVector3(-0.25, 0.2, 0.41)  // Upper area, slightly left
         bodyNode.addChildNode(leftEye)
 
         // Right eye
         let rightEye = SCNNode(geometry: eyeGeometry)
-        rightEye.position = SCNVector3(0.2 / 1.5, 0.25, 0.95) // Divide x by body scale
+        rightEye.position = SCNVector3(0.25, 0.2, 0.41)  // Upper area, slightly right
         bodyNode.addChildNode(rightEye)
     }
 
+    private func setupArms(color: NSColor) {
+        // Two tiny arm stubs on the sides like pixel art
+        let armGeometry = SCNBox(width: 0.15, height: 0.25, length: 0.2, chamferRadius: 0.02)
+
+        let material = SCNMaterial()
+        material.diffuse.contents = color
+        material.lightingModel = .physicallyBased
+
+        armGeometry.materials = [material]
+
+        // Left arm - sticks out from left side at mid-height
+        let leftArm = SCNNode(geometry: armGeometry)
+        leftArm.position = SCNVector3(-0.775, 0, 0)  // Just outside body width
+        bodyNode.addChildNode(leftArm)
+        armNodes.append(leftArm)
+
+        // Right arm - sticks out from right side
+        let rightArm = SCNNode(geometry: armGeometry)
+        rightArm.position = SCNVector3(0.775, 0, 0)
+        bodyNode.addChildNode(rightArm)
+        armNodes.append(rightArm)
+    }
+
     private func setupLegs(color: NSColor) {
-        // 2 stubby legs at bottom center like mascot (50% scale)
-        let legGeometry = SCNBox(width: 0.3, height: 0.4, length: 0.3, chamferRadius: 0.08)
+        // Two small feet at bottom like pixel art
+        let legGeometry = SCNBox(width: 0.2, height: 0.15, length: 0.25, chamferRadius: 0.02)
 
         let material = SCNMaterial()
         material.diffuse.contents = color
@@ -86,13 +107,13 @@ class AgentNode: SCNNode {
 
         legGeometry.materials = [material]
 
-        // Two legs positioned at bottom center, slightly apart
-        let legY: Float = 0.2 // Half leg height
-        let legSpacing: Float = 0.4 // Distance from center
+        // Two feet positioned at bottom, slightly apart
+        let legY: Float = 0.075  // Half leg height (very short feet)
+        let legSpacing: Float = 0.35  // Distance from center
 
         let positions = [
-            SCNVector3(-legSpacing, legY, 0),  // Left leg
-            SCNVector3(legSpacing, legY, 0)    // Right leg
+            SCNVector3(-legSpacing, legY, 0),  // Left foot
+            SCNVector3(legSpacing, legY, 0),  // Right foot
         ]
 
         for position in positions {
@@ -104,9 +125,9 @@ class AgentNode: SCNNode {
     }
 
     private func setupGlow(color: NSColor) {
-        // Circular plane beneath agent (50% scale: 2.0 diameter)
-        let glowGeometry = SCNPlane(width: 2.5, height: 2.5)
-        glowGeometry.cornerRadius = 1.25
+        // Circular plane beneath agent
+        let glowGeometry = SCNPlane(width: 2.0, height: 2.0)
+        glowGeometry.cornerRadius = 1.0
 
         let material = SCNMaterial()
         material.diffuse.contents = color.withAlphaComponent(0.3)
@@ -118,7 +139,7 @@ class AgentNode: SCNNode {
 
         glowNode = SCNNode(geometry: glowGeometry)
         glowNode.position = SCNVector3(0, 0.05, 0)
-        glowNode.eulerAngles = SCNVector3(-Float.pi / 2, 0, 0) // Rotate to lie flat
+        glowNode.eulerAngles = SCNVector3(-Float.pi / 2, 0, 0)  // Rotate to lie flat
         addChildNode(glowNode)
     }
 
@@ -129,20 +150,20 @@ class AgentNode: SCNNode {
         isWalking = true
         stopIdleAnimation()
 
-        // Body bob: Y oscillates ±0.1 over 0.3s (smaller for smaller agent)
-        let bobUp = SCNAction.moveBy(x: 0, y: 0.1, z: 0, duration: 0.15)
-        let bobDown = SCNAction.moveBy(x: 0, y: -0.1, z: 0, duration: 0.15)
+        // Body bob: Y oscillates ±0.08 over 0.3s
+        let bobUp = SCNAction.moveBy(x: 0, y: 0.08, z: 0, duration: 0.15)
+        let bobDown = SCNAction.moveBy(x: 0, y: -0.08, z: 0, duration: 0.15)
         let bobSequence = SCNAction.sequence([bobUp, bobDown])
         let bobRepeat = SCNAction.repeatForever(bobSequence)
         bodyNode.runAction(bobRepeat, forKey: "walk_bob")
 
-        // Leg cycle: Alternate legs move up/down ±0.15 (2 legs now)
-        let legUp = SCNAction.moveBy(x: 0, y: 0.15, z: 0, duration: 0.15)
-        let legDown = SCNAction.moveBy(x: 0, y: -0.15, z: 0, duration: 0.15)
+        // Leg cycle: Alternate feet move up/down ±0.08
+        let legUp = SCNAction.moveBy(x: 0, y: 0.08, z: 0, duration: 0.15)
+        let legDown = SCNAction.moveBy(x: 0, y: -0.08, z: 0, duration: 0.15)
         let legSequence1 = SCNAction.sequence([legUp, legDown])
         let legSequence2 = SCNAction.sequence([legDown, legUp])
 
-        // Left and right legs alternate
+        // Left and right feet alternate
         legNodes[0].runAction(SCNAction.repeatForever(legSequence1), forKey: "walk_leg")
         legNodes[1].runAction(SCNAction.repeatForever(legSequence2), forKey: "walk_leg")
     }
@@ -154,16 +175,16 @@ class AgentNode: SCNNode {
         bodyNode.removeAction(forKey: "walk_bob")
         legNodes.forEach { $0.removeAction(forKey: "walk_leg") }
 
-        // Reset positions smoothly (new smaller body position)
-        let resetBodyAction = SCNAction.move(to: SCNVector3(0, 1.0 + 0.4, 0), duration: 0.1)
+        // Reset positions smoothly
+        let resetBodyAction = SCNAction.move(to: SCNVector3(0, 0.5 + 0.3, 0), duration: 0.1)
         bodyNode.runAction(resetBodyAction)
 
-        // Reset leg positions (2 legs at bottom center)
-        let legY: Float = 0.2
-        let legSpacing: Float = 0.4
+        // Reset foot positions
+        let legY: Float = 0.075
+        let legSpacing: Float = 0.35
         let positions = [
-            SCNVector3(-legSpacing, legY, 0),  // Left leg
-            SCNVector3(legSpacing, legY, 0)    // Right leg
+            SCNVector3(-legSpacing, legY, 0),  // Left foot
+            SCNVector3(legSpacing, legY, 0),  // Right foot
         ]
 
         for (index, leg) in legNodes.enumerated() {

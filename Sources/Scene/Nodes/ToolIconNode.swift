@@ -1,5 +1,5 @@
-@preconcurrency import SceneKit
 import AppKit
+@preconcurrency import SceneKit
 
 class ToolIconNode: SCNNode {
     private let yOffset: Float = 2.2  // Adjusted for smaller mascot-style agent
@@ -9,7 +9,7 @@ class ToolIconNode: SCNNode {
         super.init()
         setupIcon(toolName: toolName)
         position = SCNVector3(0, yOffset, 0)
-        opacity = 0.0 // Start invisible for fade in
+        opacity = 0.0  // Start invisible for fade in
     }
 
     required init?(coder: NSCoder) {
@@ -23,7 +23,7 @@ class ToolIconNode: SCNNode {
 
         // Create text geometry with emoji
         let textGeometry = SCNText(string: emoji, extrusionDepth: 0.05)
-        textGeometry.font = NSFont.systemFont(ofSize: 48) // Large for better visibility
+        textGeometry.font = NSFont.systemFont(ofSize: 48)  // Large for better visibility
 
         let material = SCNMaterial()
         material.diffuse.contents = NSColor.white
@@ -80,7 +80,7 @@ class ToolIconNode: SCNNode {
         case "glob":
             return "📁"
         default:
-            return "🔨" // Default tool icon
+            return "🔨"  // Default tool icon
         }
     }
 

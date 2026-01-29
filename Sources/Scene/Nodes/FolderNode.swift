@@ -51,7 +51,7 @@ class FolderNode: SCNNode {
             0, 4,
             1, 4,
             2, 4,
-            3, 4
+            3, 4,
         ]
 
         let vertexSource = SCNGeometrySource(vertices: vertices)
@@ -64,8 +64,8 @@ class FolderNode: SCNNode {
 
         // Green glow material
         let material = SCNMaterial()
-        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88/255.0, alpha: 1.0) // #00ff88
-        material.emission.contents = NSColor(red: 0, green: 1, blue: 0x88/255.0, alpha: 0.3)
+        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 1.0)  // #00ff88
+        material.emission.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.3)
         material.lightingModel = .constant
         material.isDoubleSided = true
 
