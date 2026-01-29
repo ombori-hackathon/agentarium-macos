@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var apiStatus = "Checking..."
     @State private var errorMessage: String?
     @State private var selectedPath: String = ""
+    @State private var webSocketClient = WebSocketClient()
 
     private let baseURL = "http://localhost:8000"
 
@@ -64,6 +65,30 @@ struct ContentView: View {
         }
         .task {
             await checkHealth()
+            setupWebSocket()
+        }
+    }
+
+    private func setupWebSocket() {
+        // Connect to WebSocket
+        guard let wsURL = URL(string: "ws://localhost:8000/ws") else {
+            print("Invalid WebSocket URL")
+            return
+        }
+
+        webSocketClient.connect(to: wsURL)
+
+        // Set up message handlers
+        webSocketClient.onAgentSpawn = { spawn in
+            terrainScene.spawnAgent(spawn: spawn)
+        }
+
+        webSocketClient.onAgentDespawn = { despawn in
+            terrainScene.despawnAgent(despawn: despawn)
+        }
+
+        webSocketClient.onAgentEvent = { event in
+            terrainScene.handleAgentEvent(event)
         }
     }
 

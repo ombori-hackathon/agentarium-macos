@@ -87,38 +87,39 @@ class WebSocketClient: ObservableObject {
         }
 
         do {
-            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-            guard let type = json?["type"] as? String,
-                  let messageData = json?["data"] else {
-                print("Invalid message format")
-                return
-            }
+            // First decode just the type
+            let typeWrapper = try JSONDecoder().decode(TypeWrapper.self, from: data)
 
-            let dataJson = try JSONSerialization.data(withJSONObject: messageData)
-
-            switch type {
+            switch typeWrapper.type {
             case "filesystem":
+                // For filesystem, data is nested
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                guard let messageData = json?["data"] else {
+                    print("Invalid filesystem message format")
+                    return
+                }
+                let dataJson = try JSONSerialization.data(withJSONObject: messageData)
                 let layout = try JSONDecoder().decode(FilesystemLayout.self, from: dataJson)
                 print("Received filesystem update: \(layout.folders.count) folders")
                 onFilesystemUpdate?(layout)
 
             case "agent_event":
-                let event = try JSONDecoder().decode(AgentEvent.self, from: dataJson)
-                print("Received agent event: \(event.hookEventName)")
+                let event = try JSONDecoder().decode(AgentEvent.self, from: data)
+                print("Received agent event: \(event.eventType)")
                 onAgentEvent?(event)
 
             case "agent_spawn":
-                let spawn = try JSONDecoder().decode(AgentSpawn.self, from: dataJson)
+                let spawn = try JSONDecoder().decode(AgentSpawn.self, from: data)
                 print("Received agent spawn: \(spawn.agentId)")
                 onAgentSpawn?(spawn)
 
             case "agent_despawn":
-                let despawn = try JSONDecoder().decode(AgentDespawn.self, from: dataJson)
+                let despawn = try JSONDecoder().decode(AgentDespawn.self, from: data)
                 print("Received agent despawn: \(despawn.agentId)")
                 onAgentDespawn?(despawn)
 
             default:
-                print("Unknown message type: \(type)")
+                print("Unknown message type: \(typeWrapper.type)")
             }
 
         } catch {
@@ -147,4 +148,9 @@ class WebSocketClient: ObservableObject {
     deinit {
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
     }
+}
+
+// Helper to decode just the type field
+private struct TypeWrapper: Codable {
+    let type: String
 }
