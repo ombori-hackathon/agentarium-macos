@@ -106,17 +106,35 @@ class WebSocketClient: ObservableObject {
                 onFilesystemUpdate?(layout)
 
             case "agent_event":
-                let event = try JSONDecoder().decode(AgentEvent.self, from: data)
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                guard let messageData = json?["data"] else {
+                    print("Invalid agent_event message format")
+                    return
+                }
+                let dataJson = try JSONSerialization.data(withJSONObject: messageData)
+                let event = try JSONDecoder().decode(AgentEvent.self, from: dataJson)
                 print("Received agent event: \(event.eventType)")
                 onAgentEvent?(event)
 
             case "agent_spawn":
-                let spawn = try JSONDecoder().decode(AgentSpawn.self, from: data)
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                guard let messageData = json?["data"] else {
+                    print("Invalid agent_spawn message format")
+                    return
+                }
+                let dataJson = try JSONSerialization.data(withJSONObject: messageData)
+                let spawn = try JSONDecoder().decode(AgentSpawn.self, from: dataJson)
                 print("Received agent spawn: \(spawn.agentId)")
                 onAgentSpawn?(spawn)
 
             case "agent_despawn":
-                let despawn = try JSONDecoder().decode(AgentDespawn.self, from: data)
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                guard let messageData = json?["data"] else {
+                    print("Invalid agent_despawn message format")
+                    return
+                }
+                let dataJson = try JSONSerialization.data(withJSONObject: messageData)
+                let despawn = try JSONDecoder().decode(AgentDespawn.self, from: dataJson)
                 print("Received agent despawn: \(despawn.agentId)")
                 onAgentDespawn?(despawn)
 
