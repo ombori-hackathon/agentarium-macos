@@ -1,19 +1,19 @@
 import SceneKit
 
 class FolderNode: SCNNode {
-    init(folder: Folder) {
+    init(folder: FolderInfo) {
         super.init()
 
-        // Position from API
-        position = SCNVector3(
-            Float(folder.position.x),
-            Float(folder.position.y),
-            Float(folder.position.z)
-        )
+        // Position from API (use origin if not provided)
+        if let pos = folder.position {
+            position = SCNVector3(Float(pos.x), Float(pos.y), Float(pos.z))
+        } else {
+            position = SCNVector3(0, 0, 0)
+        }
 
         // Base size scales with file count
         let baseSize = Float(2.0 + log(Double(folder.fileCount + 1)))
-        let height = Float(folder.height)
+        let height = Float(folder.height ?? 3.0)
 
         // Create wireframe pyramid
         let pyramidNode = createWireframePyramid(baseSize: baseSize, height: height)

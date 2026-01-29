@@ -1,15 +1,15 @@
 import SceneKit
 
 class FileNode: SCNNode {
-    init(file: File) {
+    init(file: FileInfo) {
         super.init()
 
-        // Position from API
-        position = SCNVector3(
-            Float(file.position.x),
-            Float(file.position.y),
-            Float(file.position.z)
-        )
+        // Position from API (use origin if not provided)
+        if let pos = file.position {
+            position = SCNVector3(Float(pos.x), Float(pos.y), Float(pos.z))
+        } else {
+            position = SCNVector3(0, 0, 0)
+        }
 
         // Small cube
         let cube = SCNBox(width: 0.3, height: 0.3, length: 0.3, chamferRadius: 0)
