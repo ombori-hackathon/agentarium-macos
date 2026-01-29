@@ -234,6 +234,11 @@ class TerrainScene: SCNScene {
         print("Agent despawned: \(despawn.agentId)")
     }
 
+    func moveAgent(agentId: String, to position: SCNVector3) {
+        guard let agent = agentNodes[agentId] else { return }
+        agent.moveTo(position: position)
+    }
+
     func handleAgentEvent(_ event: AgentEvent) {
         guard let agent = agentNodes[event.agentId] else {
             print("Agent not found: \(event.agentId)")
@@ -422,7 +427,9 @@ class TerrainScene: SCNScene {
 
     // MARK: - Agent Target Highlighting
 
-    func highlightAgentTarget(path: String?) {
+    /// Highlights a top-level folder for the given path and returns the folder's position
+    /// so the agent can move to it. Returns nil if no folder found.
+    func highlightAgentTarget(path: String?) -> SCNVector3? {
         // Clear previous agent highlight
         if let prevPath = agentHighlightedPath {
             if let folder = folderNodes[prevPath] {
@@ -433,7 +440,7 @@ class TerrainScene: SCNScene {
         // Find the folder to highlight
         guard let targetPath = path else {
             agentHighlightedPath = nil
-            return
+            return nil
         }
 
         // If it's a file, get its containing folder
@@ -442,31 +449,27 @@ class TerrainScene: SCNScene {
             folderPath = (targetPath as NSString).deletingLastPathComponent
         }
 
-        // Walk up to find a visible folder (prefer depth 1-2 for visibility)
-        // Keep walking up until we find a folder that exists, or reach a reasonable level
+        // Walk up to find the highest-level folder that exists (closest to project root)
+        // This gives us a top-level folder for broad highlighting
         var currentPath = folderPath
-        var bestFolderPath: String?
+        var topLevelFolder: String?
 
         while !currentPath.isEmpty && currentPath != "/" {
             if folderNodes[currentPath] != nil {
-                bestFolderPath = currentPath
-                // If we found a folder, check if we should go higher for visibility
-                // Stop at depth ~2 for good visibility on terrain
-                let depth = currentPath.components(separatedBy: "/").count
-                if depth <= 4 {
-                    break
-                }
+                topLevelFolder = currentPath  // Keep going up, always prefer higher
             }
             currentPath = (currentPath as NSString).deletingLastPathComponent
         }
 
-        // Set new highlight
-        agentHighlightedPath = bestFolderPath
-        if let folderToHighlight = bestFolderPath {
-            if let folder = folderNodes[folderToHighlight] {
-                folder.setHighlighted(true)
-            }
+        // Set new highlight and return position
+        agentHighlightedPath = topLevelFolder
+        if let folderToHighlight = topLevelFolder,
+            let folder = folderNodes[folderToHighlight]
+        {
+            folder.setHighlighted(true)
+            return folder.position
         }
+        return nil
     }
 
     // MARK: - Label Management

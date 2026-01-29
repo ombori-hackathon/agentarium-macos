@@ -127,8 +127,10 @@ struct ContentView: View {
                 activityEntries.removeFirst()
             }
 
-            // Highlight target file/folder in scene
-            terrainScene.highlightAgentTarget(path: event.targetPath)
+            // Highlight target folder in scene and move agent there
+            if let folderPosition = terrainScene.highlightAgentTarget(path: event.targetPath) {
+                terrainScene.moveAgent(agentId: event.agentId, to: folderPosition)
+            }
         }
     }
 
