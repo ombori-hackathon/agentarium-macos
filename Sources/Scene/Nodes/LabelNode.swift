@@ -4,11 +4,11 @@ class LabelNode: SCNNode {
     private var textNode: SCNNode!
     private let initialYOffset: Float
 
-    init(text: String, yOffset: Float = 1.0) {
+    init(text: String, yOffset: Float = 1.0, fontSize: CGFloat = 12) {
         self.initialYOffset = yOffset
         super.init()
 
-        setupText(text)
+        setupText(text, fontSize: fontSize)
         position = SCNVector3(0, yOffset, 0)
 
         // Billboard constraint - always face camera
@@ -21,13 +21,13 @@ class LabelNode: SCNNode {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func setupText(_ text: String) {
+    private func setupText(_ text: String, fontSize: CGFloat = 12) {
         // Remove existing text node if any
         textNode?.removeFromParentNode()
 
         // Create 3D text geometry
         let textGeometry = SCNText(string: text, extrusionDepth: 0.1)
-        textGeometry.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)  // SF Mono, 12pt
+        textGeometry.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)  // SF Mono
         textGeometry.flatness = 0.1
 
         // Green material

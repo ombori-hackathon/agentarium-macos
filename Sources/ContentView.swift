@@ -13,10 +13,6 @@ struct ContentView: View {
     @State private var currentCwd: String?
     @State private var folderCount: Int?
     @State private var fileCount: Int?
-
-    // Tooltip state
-    @State private var hoveredNode: (name: String, path: String)?
-    @State private var mousePosition: CGPoint = .zero
     @State private var sceneView: SCNView?
 
     private let baseURL = "http://localhost:8000"
@@ -40,9 +36,7 @@ struct ContentView: View {
             } else {
                 SceneViewWrapper(
                     scene: terrainScene,
-                    sceneView: $sceneView,
-                    hoveredNode: $hoveredNode,
-                    mousePosition: $mousePosition
+                    sceneView: $sceneView
                 )
             }
 
@@ -54,18 +48,6 @@ struct ContentView: View {
                     fileCount: fileCount
                 )
                 .transition(.opacity)
-            }
-
-            // Tooltip overlay
-            if let node = hoveredNode {
-                GeometryReader { geometry in
-                    TooltipView(name: node.name, path: node.path)
-                        .position(
-                            x: min(mousePosition.x + 15, geometry.size.width - 100),
-                            y: min(mousePosition.y + 15, geometry.size.height - 50)
-                        )
-                }
-                .allowsHitTesting(false)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: isLoadingTerrain)
@@ -143,8 +125,6 @@ struct ContentView: View {
 struct SceneViewWrapper: NSViewRepresentable {
     let scene: TerrainScene
     @Binding var sceneView: SCNView?
-    @Binding var hoveredNode: (name: String, path: String)?
-    @Binding var mousePosition: CGPoint
 
     func makeNSView(context: Context) -> HoverTrackingSCNView {
         let view = HoverTrackingSCNView()
@@ -152,13 +132,6 @@ struct SceneViewWrapper: NSViewRepresentable {
         view.allowsCameraControl = true
         view.autoenablesDefaultLighting = true
         view.backgroundColor = .clear
-
-        view.onHover = { point, nodeInfo in
-            DispatchQueue.main.async {
-                mousePosition = point
-                hoveredNode = nodeInfo
-            }
-        }
 
         DispatchQueue.main.async {
             sceneView = view
@@ -175,7 +148,6 @@ struct SceneViewWrapper: NSViewRepresentable {
 // Custom SCNView subclass that tracks mouse hover
 class HoverTrackingSCNView: SCNView {
     var terrainScene: TerrainScene?
-    var onHover: ((CGPoint, (name: String, path: String)?) -> Void)?
     private var lastHoveredPath: String?
 
     override func updateTrackingAreas() {
@@ -200,11 +172,14 @@ class HoverTrackingSCNView: SCNView {
         let locationInView = convert(event.locationInWindow, from: nil)
 
         guard let scene = terrainScene else {
-            onHover?(locationInView, nil)
             return
         }
 
         Task { @MainActor in
+            // Show label for hovered node
+            scene.showLabelForNode(at: locationInView, in: self)
+
+            // Update hierarchy highlights
             if let info = scene.nodeInfo(at: locationInView, in: self) {
                 // Only update highlights if path changed
                 if info.path != lastHoveredPath {
@@ -216,14 +191,11 @@ class HoverTrackingSCNView: SCNView {
                         scene.clearAllHighlights()
                     }
                 }
-
-                onHover?(locationInView, (info.name, info.path))
             } else {
                 if lastHoveredPath != nil {
                     lastHoveredPath = nil
                     scene.clearAllHighlights()
                 }
-                onHover?(locationInView, nil)
             }
         }
     }
@@ -233,7 +205,7 @@ class HoverTrackingSCNView: SCNView {
         lastHoveredPath = nil
         if let scene = terrainScene {
             scene.clearAllHighlights()
+            scene.hideAllLabels()
         }
-        onHover?(.zero, nil)
     }
 }

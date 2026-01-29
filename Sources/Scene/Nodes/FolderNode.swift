@@ -6,10 +6,13 @@ class FolderNode: SCNNode {
     private var pyramidNode: SCNNode!
     private var defaultMaterial: SCNMaterial!
     private var highlightedMaterial: SCNMaterial!
+    private var height: Float
+    private var labelNode: LabelNode?
 
     init(folder: FolderInfo) {
         self.folderName = folder.name
         self.folderPath = folder.path
+        self.height = Float(folder.height ?? 3.0)
         super.init()
 
         // Position from API (use origin if not provided)
@@ -24,7 +27,6 @@ class FolderNode: SCNNode {
 
         // Base size scales with file count
         let baseSize = Float(2.0 + log(Double(folder.fileCount + 1)))
-        let height = Float(folder.height ?? 3.0)
 
         // Create wireframe pyramid
         pyramidNode = createWireframePyramid(baseSize: baseSize, height: height)
@@ -32,6 +34,9 @@ class FolderNode: SCNNode {
 
         // Setup highlight materials
         setupMaterials()
+
+        // Setup label
+        setupLabel()
     }
 
     required init?(coder: NSCoder) {
@@ -110,5 +115,19 @@ class FolderNode: SCNNode {
         } else {
             pyramidNode.geometry?.materials = [target]
         }
+    }
+
+    private func setupLabel() {
+        labelNode = LabelNode(text: folderName, yOffset: height + 0.5, fontSize: 11)
+        labelNode?.isHidden = true
+        addChildNode(labelNode!)
+    }
+
+    func showLabel() {
+        labelNode?.isHidden = false
+    }
+
+    func hideLabel() {
+        labelNode?.isHidden = true
     }
 }
