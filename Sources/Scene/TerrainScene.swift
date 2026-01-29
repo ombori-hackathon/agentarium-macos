@@ -428,19 +428,43 @@ class TerrainScene: SCNScene {
             if let folder = folderNodes[prevPath] {
                 folder.setHighlighted(false)
             }
-            if let file = fileNodes[prevPath] {
-                file.setHighlighted(false)
+        }
+
+        // Find the folder to highlight
+        guard let targetPath = path else {
+            agentHighlightedPath = nil
+            return
+        }
+
+        // If it's a file, get its containing folder
+        var folderPath = targetPath
+        if fileNodes[targetPath] != nil {
+            folderPath = (targetPath as NSString).deletingLastPathComponent
+        }
+
+        // Walk up to find a visible folder (prefer depth 1-2 for visibility)
+        // Keep walking up until we find a folder that exists, or reach a reasonable level
+        var currentPath = folderPath
+        var bestFolderPath: String?
+
+        while !currentPath.isEmpty && currentPath != "/" {
+            if folderNodes[currentPath] != nil {
+                bestFolderPath = currentPath
+                // If we found a folder, check if we should go higher for visibility
+                // Stop at depth ~2 for good visibility on terrain
+                let depth = currentPath.components(separatedBy: "/").count
+                if depth <= 4 {
+                    break
+                }
             }
+            currentPath = (currentPath as NSString).deletingLastPathComponent
         }
 
         // Set new highlight
-        agentHighlightedPath = path
-        if let newPath = path {
-            if let folder = folderNodes[newPath] {
+        agentHighlightedPath = bestFolderPath
+        if let folderToHighlight = bestFolderPath {
+            if let folder = folderNodes[folderToHighlight] {
                 folder.setHighlighted(true)
-            }
-            if let file = fileNodes[newPath] {
-                file.setHighlighted(true)
             }
         }
     }
