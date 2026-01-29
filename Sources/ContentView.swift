@@ -126,7 +126,7 @@ struct ContentView: View {
         webSocketClient.onFilesystemUpdate = { layout in
             folderCount = layout.folders.count
             fileCount = layout.files.count
-            loadingMessage = "Building terrain..."
+            loadingMessage = "Building world..."
 
             Task {
                 await terrainScene.updateTerrainWithAnimation(with: layout)

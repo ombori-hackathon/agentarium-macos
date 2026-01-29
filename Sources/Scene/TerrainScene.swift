@@ -100,34 +100,11 @@ class TerrainScene: SCNScene {
         folderNodes.removeAll()
         fileNodes.removeAll()
 
-        // Group folders by depth for wave animation
-        var foldersByDepth: [Int: [FolderInfo]] = [:]
-        for folder in layout.folders {
-            foldersByDepth[folder.depth, default: []].append(folder)
-        }
-
-        // Group files by their parent folder's depth
-        var filesByFolderDepth: [Int: [FileInfo]] = [:]
-        let folderDepths = Dictionary(uniqueKeysWithValues: layout.folders.map { ($0.path, $0.depth) })
-        for file in layout.files {
-            let depth = folderDepths[file.folder] ?? 1
-            filesByFolderDepth[depth, default: []].append(file)
-        }
-
-        // Also handle files in root (depth 0)
-        let rootFiles = layout.files.filter { $0.folder == layout.root }
-        if !rootFiles.isEmpty {
-            filesByFolderDepth[0, default: []].append(contentsOf: rootFiles)
-        }
-
-        let maxDepth = max(foldersByDepth.keys.max() ?? 0, filesByFolderDepth.keys.max() ?? 0)
-
-        // Spawn all nodes below ground first
+        // Spawn all nodes below ground first, then animate all at once
         for folder in layout.folders {
             let folderNode = FolderNode(folder: folder)
-            // Start below ground
             let targetY = CGFloat(folder.position?.y ?? 0)
-            folderNode.position.y = targetY - 15
+            folderNode.position.y = targetY - 10
             folderNode.opacity = 0
             rootNode.addChildNode(folderNode)
             folderNodes[folder.path] = folderNode
@@ -135,54 +112,50 @@ class TerrainScene: SCNScene {
 
         for file in layout.files {
             let fileNode = FileNode(file: file)
-            // Start below ground
             let targetY = CGFloat(file.position?.y ?? 0)
-            fileNode.position.y = targetY - 15
+            fileNode.position.y = targetY - 10
             fileNode.opacity = 0
             rootNode.addChildNode(fileNode)
             fileNodes[file.path] = fileNode
         }
 
-        // Animate rising up in waves by depth
-        for depth in 0...maxDepth {
-            // Animate folders at this depth
-            let foldersAtDepth = foldersByDepth[depth] ?? []
-            for folder in foldersAtDepth {
-                if let node = folderNodes[folder.path] {
-                    let targetY = CGFloat(folder.position?.y ?? 0)
-                    let riseAction = SCNAction.move(
-                        to: SCNVector3(node.position.x, targetY, node.position.z),
-                        duration: 0.4
-                    )
-                    riseAction.timingMode = .easeOut
+        // Fire all animations at once (non-blocking) with slight stagger
+        var delay: Double = 0
+        let staggerIncrement: Double = 0.01  // 10ms between each node
 
-                    let fadeIn = SCNAction.fadeIn(duration: 0.3)
-                    await node.runAction(SCNAction.group([riseAction, fadeIn]))
-                }
+        for folder in layout.folders {
+            if let node = folderNodes[folder.path] {
+                let targetY = CGFloat(folder.position?.y ?? 0)
+                let riseAction = SCNAction.move(
+                    to: SCNVector3(node.position.x, targetY, node.position.z),
+                    duration: 0.3
+                )
+                riseAction.timingMode = .easeOut
+                let fadeIn = SCNAction.fadeIn(duration: 0.2)
+                let delayAction = SCNAction.wait(duration: delay)
+                node.runAction(SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]))
+                delay += staggerIncrement
             }
-
-            // Animate files at folders of this depth
-            let filesAtDepth = filesByFolderDepth[depth] ?? []
-            for file in filesAtDepth {
-                if let node = fileNodes[file.path] {
-                    let targetY = CGFloat(file.position?.y ?? 0)
-                    let riseAction = SCNAction.move(
-                        to: SCNVector3(node.position.x, targetY, node.position.z),
-                        duration: 0.4
-                    )
-                    riseAction.timingMode = .easeOut
-
-                    let fadeIn = SCNAction.fadeIn(duration: 0.3)
-                    await node.runAction(SCNAction.group([riseAction, fadeIn]))
-                }
-            }
-
-            // Stagger by depth - wait before animating next depth
-            try? await Task.sleep(for: .milliseconds(150))
         }
 
-        // Final wait for animations to complete
-        try? await Task.sleep(for: .milliseconds(500))
+        for file in layout.files {
+            if let node = fileNodes[file.path] {
+                let targetY = CGFloat(file.position?.y ?? 0)
+                let riseAction = SCNAction.move(
+                    to: SCNVector3(node.position.x, targetY, node.position.z),
+                    duration: 0.3
+                )
+                riseAction.timingMode = .easeOut
+                let fadeIn = SCNAction.fadeIn(duration: 0.2)
+                let delayAction = SCNAction.wait(duration: delay)
+                node.runAction(SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]))
+                delay += staggerIncrement
+            }
+        }
+
+        // Wait for animations to complete (max delay + animation duration)
+        let totalWait = delay + 0.4
+        try? await Task.sleep(for: .milliseconds(Int(totalWait * 1000)))
     }
 
     // MARK: - Hit Testing for Tooltips
