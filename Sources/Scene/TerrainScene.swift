@@ -274,10 +274,10 @@ class TerrainScene: SCNScene {
         //     agent.updateThought(thought)
         // }
 
-        // Update file path label if provided
-        if let targetPath = event.targetPath {
-            agent.updateFilePath(targetPath)
-        }
+        // File path label disabled - using activity log instead
+        // if let targetPath = event.targetPath {
+        //     agent.updateFilePath(targetPath)
+        // }
 
         // Show tool icon if provided
         if let toolName = event.toolName {
@@ -297,10 +297,10 @@ class TerrainScene: SCNScene {
         //     agent.updateThought(thought)
         // }
 
-        // Update file path label if provided
-        if let targetPath = event.targetPath {
-            agent.updateFilePath(targetPath)
-        }
+        // File path label disabled - using activity log instead
+        // if let targetPath = event.targetPath {
+        //     agent.updateFilePath(targetPath)
+        // }
 
         // Show tool icon
         if let toolName = event.toolName {
