@@ -8,7 +8,7 @@ class ThoughtBubbleNode: SCNNode {
 
     private let maxWidth: CGFloat = 200
     private let padding: CGFloat = 12
-    private let yOffset: Float = 4.0
+    private let yOffset: Float = 2.8  // Adjusted for smaller mascot-style agent
 
     init(text: String) {
         super.init()
