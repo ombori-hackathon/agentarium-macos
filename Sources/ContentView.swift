@@ -70,13 +70,8 @@ struct ContentView: View {
     }
 
     private func setupWebSocket() {
-        // Connect to WebSocket
-        guard let wsURL = URL(string: "ws://localhost:8000/ws") else {
-            print("Invalid WebSocket URL")
-            return
-        }
-
-        webSocketClient.connect(to: wsURL)
+        // Connect to WebSocket (URL is set in WebSocketClient init)
+        webSocketClient.connect()
 
         // Set up message handlers
         webSocketClient.onAgentSpawn = { spawn in
