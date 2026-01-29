@@ -1,9 +1,14 @@
 import SceneKit
 
 class TerrainScene: SCNScene {
-    private var folderNodes: [String: SCNNode] = [:]
-    private var fileNodes: [String: SCNNode] = [:]
+    private var folderNodes: [String: FolderNode] = [:]
+    private var fileNodes: [String: FileNode] = [:]
     private var agentNodes: [String: AgentNode] = [:]
+
+    // Hierarchy tracking
+    private var folderChildren: [String: Set<String>] = [:]  // parent path -> child folder paths
+    private var folderFiles: [String: Set<String>] = [:]  // folder path -> file paths
+    private var currentlyHighlighted: Set<String> = []
 
     override init() {
         super.init()
@@ -59,6 +64,9 @@ class TerrainScene: SCNScene {
         folderNodes.removeAll()
         fileNodes.removeAll()
 
+        // Build hierarchy
+        buildHierarchy(from: layout.folders, files: layout.files)
+
         let batchSize = 50
 
         // Spawn folder nodes in batches
@@ -99,6 +107,9 @@ class TerrainScene: SCNScene {
         fileNodes.values.forEach { $0.removeFromParentNode() }
         folderNodes.removeAll()
         fileNodes.removeAll()
+
+        // Build hierarchy
+        buildHierarchy(from: layout.folders, files: layout.files)
 
         // Spawn all nodes below ground first, then animate all at once
         for folder in layout.folders {
@@ -165,29 +176,20 @@ class TerrainScene: SCNScene {
     // MARK: - Hit Testing for Tooltips
 
     @MainActor
-    func nodeInfo(at point: CGPoint, in view: SCNView) -> (name: String, path: String)? {
-        let hitResults = view.hitTest(
-            point,
-            options: [
-                .boundingBoxOnly: false,
-                .firstFoundOnly: true,
-                .ignoreHiddenNodes: true,
-            ])
-
-        guard let firstHit = hitResults.first else { return nil }
-
-        // Walk up the node hierarchy to find a node with a name (our folder/file nodes)
-        var node: SCNNode? = firstHit.node
-        while node != nil {
-            if let nodeName = node?.name, nodeName.contains("|") {
-                let parts = nodeName.split(separator: "|", maxSplits: 1)
-                if parts.count == 2 {
-                    return (name: String(parts[0]), path: String(parts[1]))
+    func nodeInfo(at point: CGPoint, in view: SCNView) -> (name: String, path: String, isFolder: Bool)? {
+        let hitResults = view.hitTest(point, options: [:])
+        for result in hitResults {
+            var node: SCNNode? = result.node
+            while let current = node {
+                if let folderNode = current as? FolderNode {
+                    return (folderNode.folderName, folderNode.folderPath, true)
                 }
+                if let fileNode = current as? FileNode {
+                    return (fileNode.fileName, fileNode.filePath, false)
+                }
+                node = current.parent
             }
-            node = node?.parent
         }
-
         return nil
     }
 
@@ -328,5 +330,87 @@ class TerrainScene: SCNScene {
 
         // Make sure idle animation is running
         agent.startIdleAnimation()
+    }
+
+    // MARK: - Hierarchy Tracking
+
+    private func buildHierarchy(from folders: [FolderInfo], files: [FileInfo]) {
+        folderChildren.removeAll()
+        folderFiles.removeAll()
+
+        for folder in folders {
+            if let parent = folder.parentPath {
+                folderChildren[parent, default: []].insert(folder.path)
+            }
+        }
+
+        for file in files {
+            folderFiles[file.folderPath, default: []].insert(file.path)
+        }
+    }
+
+    private func getAllDescendants(of folderPath: String) -> (folders: Set<String>, files: Set<String>) {
+        var resultFolders: Set<String> = []
+        var resultFiles: Set<String> = []
+        var queue = [folderPath]
+
+        while !queue.isEmpty {
+            let current = queue.removeFirst()
+
+            // Add direct files
+            if let files = folderFiles[current] {
+                resultFiles.formUnion(files)
+            }
+
+            // Add child folders and queue them
+            if let children = folderChildren[current] {
+                resultFolders.formUnion(children)
+                queue.append(contentsOf: children)
+            }
+        }
+
+        return (resultFolders, resultFiles)
+    }
+
+    func highlightHierarchy(folderPath: String) {
+        // Clear previous highlights
+        clearAllHighlights()
+
+        // Get all descendants
+        let (descendantFolders, descendantFiles) = getAllDescendants(of: folderPath)
+
+        // Highlight the hovered folder
+        if let node = folderNodes[folderPath] {
+            node.setHighlighted(true)
+            currentlyHighlighted.insert(folderPath)
+        }
+
+        // Highlight descendant folders
+        for path in descendantFolders {
+            if let node = folderNodes[path] {
+                node.setHighlighted(true)
+                currentlyHighlighted.insert(path)
+            }
+        }
+
+        // Highlight descendant files
+        for path in descendantFiles {
+            if let node = fileNodes[path] {
+                node.setHighlighted(true)
+                currentlyHighlighted.insert(path)
+            }
+        }
+    }
+
+    func clearAllHighlights() {
+        for path in currentlyHighlighted {
+            if let folderNode = folderNodes[path] {
+                folderNode.setHighlighted(false)
+            }
+            if let fileNode = fileNodes[path] {
+                fileNode.setHighlighted(false)
+            }
+        }
+        currentlyHighlighted.removeAll()
     }
 }

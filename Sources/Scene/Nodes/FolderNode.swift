@@ -1,7 +1,15 @@
 import SceneKit
 
 class FolderNode: SCNNode {
+    let folderName: String
+    let folderPath: String
+    private var pyramidNode: SCNNode!
+    private var defaultMaterial: SCNMaterial!
+    private var highlightedMaterial: SCNMaterial!
+
     init(folder: FolderInfo) {
+        self.folderName = folder.name
+        self.folderPath = folder.path
         super.init()
 
         // Position from API (use origin if not provided)
@@ -19,8 +27,11 @@ class FolderNode: SCNNode {
         let height = Float(folder.height ?? 3.0)
 
         // Create wireframe pyramid
-        let pyramidNode = createWireframePyramid(baseSize: baseSize, height: height)
+        pyramidNode = createWireframePyramid(baseSize: baseSize, height: height)
         addChildNode(pyramidNode)
+
+        // Setup highlight materials
+        setupMaterials()
     }
 
     required init?(coder: NSCoder) {
@@ -72,5 +83,30 @@ class FolderNode: SCNNode {
         geometry.materials = [material]
 
         return SCNNode(geometry: geometry)
+    }
+
+    private func setupMaterials() {
+        // Default material (existing)
+        defaultMaterial = pyramidNode.geometry?.firstMaterial ?? SCNMaterial()
+
+        // Highlighted material (brighter emission)
+        highlightedMaterial = SCNMaterial()
+        highlightedMaterial.diffuse.contents = NSColor(red: 0.2, green: 0.8, blue: 0.4, alpha: 0.9)
+        highlightedMaterial.emission.contents = NSColor(red: 0.3, green: 1.0, blue: 0.6, alpha: 0.8)
+        highlightedMaterial.lightingModel = .constant
+        highlightedMaterial.isDoubleSided = true
+        highlightedMaterial.transparency = 0.85
+    }
+
+    func setHighlighted(_ highlighted: Bool, animated: Bool = true) {
+        let target = highlighted ? highlightedMaterial! : defaultMaterial!
+        if animated {
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0.15
+            pyramidNode.geometry?.materials = [target]
+            SCNTransaction.commit()
+        } else {
+            pyramidNode.geometry?.materials = [target]
+        }
     }
 }
