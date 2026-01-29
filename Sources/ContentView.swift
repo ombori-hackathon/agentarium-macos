@@ -176,6 +176,7 @@ struct SceneViewWrapper: NSViewRepresentable {
 class HoverTrackingSCNView: SCNView {
     var terrainScene: TerrainScene?
     var onHover: ((CGPoint, (name: String, path: String)?) -> Void)?
+    private var lastHoveredPath: String?
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -186,7 +187,7 @@ class HoverTrackingSCNView: SCNView {
         // Add new tracking area
         let trackingArea = NSTrackingArea(
             rect: bounds,
-            options: [.activeInKeyWindow, .mouseMoved, .inVisibleRect],
+            options: [.activeInKeyWindow, .mouseMoved, .inVisibleRect, .mouseEnteredAndExited],
             owner: self,
             userInfo: nil
         )
@@ -204,13 +205,35 @@ class HoverTrackingSCNView: SCNView {
         }
 
         Task { @MainActor in
-            let nodeInfo = scene.nodeInfo(at: locationInView, in: self)
-            onHover?(locationInView, nodeInfo)
+            if let info = scene.nodeInfo(at: locationInView, in: self) {
+                // Only update highlights if path changed
+                if info.path != lastHoveredPath {
+                    lastHoveredPath = info.path
+
+                    if info.isFolder {
+                        scene.highlightHierarchy(folderPath: info.path)
+                    } else {
+                        scene.clearAllHighlights()
+                    }
+                }
+
+                onHover?(locationInView, (info.name, info.path))
+            } else {
+                if lastHoveredPath != nil {
+                    lastHoveredPath = nil
+                    scene.clearAllHighlights()
+                }
+                onHover?(locationInView, nil)
+            }
         }
     }
 
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
+        lastHoveredPath = nil
+        if let scene = terrainScene {
+            scene.clearAllHighlights()
+        }
         onHover?(.zero, nil)
     }
 }

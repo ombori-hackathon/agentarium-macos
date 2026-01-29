@@ -49,6 +49,8 @@ struct FolderInfo: Codable {
     let fileCount: Int
     let position: Position?
     let height: Double?
+    let totalContents: Int
+    let parentPath: String?
 
     enum CodingKeys: String, CodingKey {
         case path
@@ -57,6 +59,8 @@ struct FolderInfo: Codable {
         case fileCount = "file_count"
         case position
         case height
+        case totalContents = "total_contents"
+        case parentPath = "parent_path"
     }
 }
 
@@ -64,8 +68,18 @@ struct FileInfo: Codable {
     let path: String
     let name: String
     let folder: String
+    let folderPath: String
     let size: Int
     let position: Position?
+
+    enum CodingKeys: String, CodingKey {
+        case path
+        case name
+        case folder
+        case folderPath = "folder_path"
+        case size
+        case position
+    }
 }
 
 // MARK: - Position
