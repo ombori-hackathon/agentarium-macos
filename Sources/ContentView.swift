@@ -5,64 +5,84 @@ struct ContentView: View {
     @State private var terrainScene = TerrainScene()
     @State private var apiStatus = "Checking..."
     @State private var errorMessage: String?
-    @State private var selectedPath: String = ""
     @State private var webSocketClient = WebSocketClient()
+
+    // Loading state
+    @State private var isLoadingTerrain = false
+    @State private var loadingMessage = "Waiting for Claude Code..."
+    @State private var currentCwd: String?
+    @State private var folderCount: Int?
+    @State private var fileCount: Int?
 
     private let baseURL = "http://localhost:8000"
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("agentarium")
-                    .font(.title.bold())
-                Spacer()
+        ZStack {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("agentarium")
+                        .font(.title.bold())
 
-                // Directory path input
-                TextField("Codebase path", text: $selectedPath)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 300)
+                    Spacer()
 
-                Button("Load") {
-                    Task {
-                        await loadFilesystem()
+                    if let cwd = currentCwd {
+                        Text(cwd)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    } else {
+                        Text("Waiting for Claude Code session...")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
                     }
-                }
-                .disabled(selectedPath.isEmpty)
 
-                Spacer()
+                    Spacer()
 
-                Circle()
-                    .fill(apiStatus == "healthy" ? .green : .red)
-                    .frame(width: 12, height: 12)
-                Text(apiStatus)
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-            .background(.bar)
-
-            Divider()
-
-            // SceneKit View
-            if let error = errorMessage {
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundStyle(.orange)
-                    Text(error)
+                    Circle()
+                        .fill(apiStatus == "healthy" ? .green : .red)
+                        .frame(width: 12, height: 12)
+                    Text(apiStatus)
                         .foregroundStyle(.secondary)
-                    Text("Start API: cd services/api && uv run fastapi dev")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                SceneView(
-                    scene: terrainScene,
-                    options: [.allowsCameraControl, .autoenablesDefaultLighting]
+                .padding()
+                .background(.bar)
+
+                Divider()
+
+                // SceneKit View
+                if let error = errorMessage {
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.orange)
+                        Text(error)
+                            .foregroundStyle(.secondary)
+                        Text("Start API: cd services/api && uv run fastapi dev")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    SceneView(
+                        scene: terrainScene,
+                        options: [.allowsCameraControl, .autoenablesDefaultLighting]
+                    )
+                }
+            }
+
+            // Loading overlay
+            if isLoadingTerrain {
+                WorldLoadingOverlay(
+                    message: loadingMessage,
+                    folderCount: folderCount,
+                    fileCount: fileCount
                 )
+                .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: isLoadingTerrain)
         .task {
             await checkHealth()
             setupWebSocket()
@@ -74,6 +94,35 @@ struct ContentView: View {
         webSocketClient.connect()
 
         // Set up message handlers
+        webSocketClient.onTerrainLoading = { loading in
+            isLoadingTerrain = true
+            loadingMessage = loading.message
+            currentCwd = loading.cwd
+            folderCount = nil
+            fileCount = nil
+        }
+
+        webSocketClient.onFilesystemUpdate = { layout in
+            folderCount = layout.folders.count
+            fileCount = layout.files.count
+            loadingMessage = "Building terrain..."
+
+            Task {
+                await terrainScene.updateTerrainWithAnimation(with: layout)
+            }
+        }
+
+        webSocketClient.onTerrainComplete = { complete in
+            folderCount = complete.folderCount
+            fileCount = complete.fileCount
+
+            // Hide overlay after a short delay for animation to complete
+            Task {
+                try? await Task.sleep(for: .milliseconds(800))
+                isLoadingTerrain = false
+            }
+        }
+
         webSocketClient.onAgentSpawn = { spawn in
             terrainScene.spawnAgent(spawn: spawn)
         }
@@ -96,30 +145,6 @@ struct ContentView: View {
         } catch {
             apiStatus = "offline"
             errorMessage = "API not running"
-        }
-    }
-
-    private func loadFilesystem() async {
-        errorMessage = nil
-
-        guard !selectedPath.isEmpty else {
-            errorMessage = "Please enter a path"
-            return
-        }
-
-        do {
-            let urlString = "\(baseURL)/api/filesystem?path=\(selectedPath.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
-            guard let url = URL(string: urlString) else {
-                errorMessage = "Invalid URL"
-                return
-            }
-
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let layout = try JSONDecoder().decode(FilesystemLayout.self, from: data)
-
-            await terrainScene.updateTerrain(with: layout)
-        } catch {
-            errorMessage = "Failed to load filesystem: \(error.localizedDescription)"
         }
     }
 }
