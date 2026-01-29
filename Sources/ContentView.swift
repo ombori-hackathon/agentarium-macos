@@ -23,62 +23,27 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("agentarium")
-                        .font(.title.bold())
-
-                    Spacer()
-
-                    if let cwd = currentCwd {
-                        Text(cwd)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    } else {
-                        Text("Waiting for Claude Code session...")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-
-                    Spacer()
-
-                    Circle()
-                        .fill(apiStatus == "healthy" ? .green : .red)
-                        .frame(width: 12, height: 12)
-                    Text(apiStatus)
+            // SceneKit View - fullscreen
+            if let error = errorMessage {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundStyle(.orange)
+                    Text(error)
                         .foregroundStyle(.secondary)
+                    Text("Start API: cd services/api && uv run fastapi dev")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
                 }
-                .padding()
-                .background(.bar)
-
-                Divider()
-
-                // SceneKit View
-                if let error = errorMessage {
-                    VStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
-                            .foregroundStyle(.orange)
-                        Text(error)
-                            .foregroundStyle(.secondary)
-                        Text("Start API: cd services/api && uv run fastapi dev")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    GeometryReader { geometry in
-                        SceneViewWrapper(
-                            scene: terrainScene,
-                            sceneView: $sceneView,
-                            hoveredNode: $hoveredNode,
-                            mousePosition: $mousePosition
-                        )
-                    }
-                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(red: 0x0a/255.0, green: 0x0a/255.0, blue: 0x12/255.0))
+            } else {
+                SceneViewWrapper(
+                    scene: terrainScene,
+                    sceneView: $sceneView,
+                    hoveredNode: $hoveredNode,
+                    mousePosition: $mousePosition
+                )
             }
 
             // Loading overlay
