@@ -98,10 +98,9 @@ class TerrainScene: SCNScene {
     func despawnAgent(despawn: AgentDespawn) {
         guard let agent = agentNodes[despawn.agentId] else { return }
 
-        // Fade out and remove
-        let fadeAction = SCNAction.fadeOut(duration: 0.5)
-        agent.runAction(fadeAction) {
-            agent.removeFromParentNode()
+        // Use the agent's despawn method with fade animation
+        agent.despawn {
+            // Clean up reference after fade completes
         }
 
         agentNodes.removeValue(forKey: despawn.agentId)
@@ -144,13 +143,14 @@ class TerrainScene: SCNScene {
             Float(targetPosition.z)
         )
 
-        // Calculate duration based on distance (distance / 10.0 seconds)
-        let distance = agent.position.distance(to: target)
-        let duration = TimeInterval(distance / 10.0)
-
         // Update thought if provided
         if let thought = event.thought {
             agent.updateThought(thought)
+        }
+
+        // Update file path label if provided
+        if let targetPath = event.targetPath {
+            agent.updateFilePath(targetPath)
         }
 
         // Show tool icon if provided
@@ -158,8 +158,8 @@ class TerrainScene: SCNScene {
             agent.showToolIcon(toolName)
         }
 
-        // Move to target
-        agent.moveTo(position: target, duration: duration) {
+        // Move to target (duration calculated automatically)
+        agent.moveTo(position: target) {
             // Hide tool icon after arrival
             agent.hideToolIcon()
         }
@@ -169,6 +169,11 @@ class TerrainScene: SCNScene {
         // Update thought
         if let thought = event.thought {
             agent.updateThought(thought)
+        }
+
+        // Update file path label if provided
+        if let targetPath = event.targetPath {
+            agent.updateFilePath(targetPath)
         }
 
         // Show tool icon
@@ -191,10 +196,7 @@ class TerrainScene: SCNScene {
                 Float(targetPosition.z)
             )
 
-            let distance = agent.position.distance(to: target)
-            let duration = TimeInterval(distance / 10.0)
-
-            agent.moveTo(position: target, duration: duration)
+            agent.moveTo(position: target)
         }
     }
 
@@ -208,20 +210,5 @@ class TerrainScene: SCNScene {
 
         // Make sure idle animation is running
         agent.startIdleAnimation()
-    }
-}
-
-// MARK: - SCNVector3 Extensions
-
-extension SCNVector3 {
-    func distance(to other: SCNVector3) -> Float {
-        let dx = x - other.x
-        let dy = y - other.y
-        let dz = z - other.z
-        let dxSquared = dx * dx
-        let dySquared = dy * dy
-        let dzSquared = dz * dz
-        let sum = dxSquared + dySquared + dzSquared
-        return Float(sqrt(Double(sum)))
     }
 }

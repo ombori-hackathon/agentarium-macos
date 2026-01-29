@@ -6,9 +6,14 @@ class AgentNode: SCNNode {
     private var glowNode: SCNNode!
     private var thoughtBubble: ThoughtBubbleNode?
     private var toolIcon: ToolIconNode?
+    private var pathLabel: LabelNode?
 
     private var isWalking = false
     private var isIdling = false
+
+    // Movement queue for handling rapid events
+    private var movementQueue: [(position: SCNVector3, duration: TimeInterval)] = []
+    private var isMoving = false
 
     init(color: String = "#e07850") {
         super.init()
@@ -195,14 +200,77 @@ class AgentNode: SCNNode {
 
     // MARK: - Movement
 
-    func moveTo(position: SCNVector3, duration: TimeInterval, completion: (() -> Void)? = nil) {
+    func moveTo(position: SCNVector3, duration: TimeInterval = 0, completion: (() -> Void)? = nil) {
+        // Calculate duration based on distance if not provided
+        let finalDuration: TimeInterval
+        if duration > 0 {
+            finalDuration = duration
+        } else {
+            let distance = self.position.distance(to: position)
+            let speed: Float = 10.0  // units per second
+            var calculatedDuration = TimeInterval(distance / speed)
+            calculatedDuration = max(0.3, min(calculatedDuration, 2.0))
+            finalDuration = calculatedDuration
+        }
+
+        // Add to queue
+        movementQueue.append((position: position, duration: finalDuration))
+        processMovementQueue(completion: completion)
+    }
+
+    private func processMovementQueue(completion: (() -> Void)? = nil) {
+        guard !isMoving, let nextMove = movementQueue.first else {
+            if movementQueue.isEmpty {
+                completion?()
+            }
+            return
+        }
+
+        isMoving = true
+        movementQueue.removeFirst()
+
         startWalkAnimation()
 
-        let moveAction = SCNAction.move(to: position, duration: duration)
+        let moveAction = SCNAction.move(to: nextMove.position, duration: nextMove.duration)
         moveAction.timingMode = .easeInEaseOut
 
-        runAction(moveAction) {
+        runAction(moveAction) { [weak self] in
+            guard let self = self else { return }
             self.stopWalkAnimation()
+            self.isMoving = false
+
+            // Process next move in queue
+            if !self.movementQueue.isEmpty {
+                self.processMovementQueue(completion: completion)
+            } else {
+                completion?()
+            }
+        }
+    }
+
+    // MARK: - File Path Label
+
+    func updateFilePath(_ path: String?) {
+        if let path = path {
+            if pathLabel == nil {
+                pathLabel = LabelNode(text: path)
+                pathLabel?.position = SCNVector3(0, -1.5, 0)  // Below agent
+                addChildNode(pathLabel!)
+            } else {
+                pathLabel?.updateText(path)
+            }
+        } else {
+            pathLabel?.removeFromParentNode()
+            pathLabel = nil
+        }
+    }
+
+    // MARK: - Despawn
+
+    func despawn(completion: (() -> Void)? = nil) {
+        let fadeOut = SCNAction.fadeOut(duration: 0.5)
+        let remove = SCNAction.removeFromParentNode()
+        runAction(SCNAction.sequence([fadeOut, remove])) {
             completion?()
         }
     }
@@ -268,5 +336,20 @@ class AgentNode: SCNNode {
             blue: rgb.blueComponent * factor,
             alpha: rgb.alphaComponent
         )
+    }
+}
+
+// MARK: - SCNVector3 Extensions
+
+extension SCNVector3 {
+    func distance(to other: SCNVector3) -> Float {
+        let dx = x - other.x
+        let dy = y - other.y
+        let dz = z - other.z
+        let dxSquared = dx * dx
+        let dySquared = dy * dy
+        let dzSquared = dz * dz
+        let sum = dxSquared + dySquared + dzSquared
+        return Float(sqrt(Double(sum)))
     }
 }

@@ -1,8 +1,29 @@
 import SceneKit
 
 class LabelNode: SCNNode {
+    private var textNode: SCNNode!
+    private let initialYOffset: Float
+
     init(text: String, yOffset: Float = 1.0) {
+        self.initialYOffset = yOffset
         super.init()
+
+        setupText(text)
+        position = SCNVector3(0, yOffset, 0)
+
+        // Billboard constraint - always face camera
+        let billboardConstraint = SCNBillboardConstraint()
+        billboardConstraint.freeAxes = [.Y] // Only rotate around Y axis
+        constraints = [billboardConstraint]
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setupText(_ text: String) {
+        // Remove existing text node if any
+        textNode?.removeFromParentNode()
 
         // Create 3D text geometry
         let textGeometry = SCNText(string: text, extrusionDepth: 0.1)
@@ -16,7 +37,7 @@ class LabelNode: SCNNode {
         textGeometry.materials = [material]
 
         // Create node with text
-        let textNode = SCNNode(geometry: textGeometry)
+        textNode = SCNNode(geometry: textGeometry)
 
         // Center the text horizontally
         let (min, max) = textGeometry.boundingBox
@@ -25,17 +46,9 @@ class LabelNode: SCNNode {
 
         // Add text node as child
         addChildNode(textNode)
-
-        // Position above folder
-        position = SCNVector3(0, yOffset, 0)
-
-        // Billboard constraint - always face camera
-        let billboardConstraint = SCNBillboardConstraint()
-        billboardConstraint.freeAxes = [.Y] // Only rotate around Y axis
-        constraints = [billboardConstraint]
     }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    func updateText(_ text: String) {
+        setupText(text)
     }
 }
