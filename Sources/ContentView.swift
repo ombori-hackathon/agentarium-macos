@@ -15,6 +15,9 @@ struct ContentView: View {
     @State private var fileCount: Int?
     @State private var sceneView: SCNView?
 
+    // Activity log
+    @State private var activityEntries: [ActivityEntry] = []
+
     private let baseURL = "http://localhost:8000"
 
     var body: some View {
@@ -48,6 +51,18 @@ struct ContentView: View {
                     fileCount: fileCount
                 )
                 .transition(.opacity)
+            }
+
+            // Activity log overlay (bottom-right)
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    if !activityEntries.isEmpty {
+                        ActivityLogView(entries: activityEntries)
+                            .padding()
+                    }
+                }
             }
         }
         .animation(.easeInOut(duration: 0.3), value: isLoadingTerrain)
@@ -104,6 +119,18 @@ struct ContentView: View {
 
         webSocketClient.onAgentEvent = { event in
             terrainScene.handleAgentEvent(event)
+
+            // Add to activity log (keep last 10)
+            let entry = ActivityEntry.from(event: event)
+            activityEntries.append(entry)
+            if activityEntries.count > 10 {
+                activityEntries.removeFirst()
+            }
+
+            // Highlight target folder in scene and move agent there
+            if let folderPosition = terrainScene.highlightAgentTarget(path: event.targetPath) {
+                terrainScene.moveAgent(agentId: event.agentId, to: folderPosition)
+            }
         }
     }
 
