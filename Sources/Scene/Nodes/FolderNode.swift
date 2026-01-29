@@ -11,6 +11,9 @@ class FolderNode: SCNNode {
             position = SCNVector3(0, 0, 0)
         }
 
+        // Store name and path in node for tooltip access
+        name = "\(folder.name)|\(folder.path)"
+
         // Base size scales with file count
         let baseSize = Float(2.0 + log(Double(folder.fileCount + 1)))
         let height = Float(folder.height ?? 3.0)
@@ -18,10 +21,6 @@ class FolderNode: SCNNode {
         // Create wireframe pyramid
         let pyramidNode = createWireframePyramid(baseSize: baseSize, height: height)
         addChildNode(pyramidNode)
-
-        // Add label above pyramid apex
-        let labelNode = LabelNode(text: folder.name, yOffset: height + 1.0)
-        addChildNode(labelNode)
     }
 
     required init?(coder: NSCoder) {

@@ -14,6 +14,11 @@ struct ContentView: View {
     @State private var folderCount: Int?
     @State private var fileCount: Int?
 
+    // Tooltip state
+    @State private var hoveredNode: (name: String, path: String)?
+    @State private var mousePosition: CGPoint = .zero
+    @State private var sceneView: SCNView?
+
     private let baseURL = "http://localhost:8000"
 
     var body: some View {
@@ -65,10 +70,14 @@ struct ContentView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    SceneView(
-                        scene: terrainScene,
-                        options: [.allowsCameraControl, .autoenablesDefaultLighting]
-                    )
+                    GeometryReader { geometry in
+                        SceneViewWrapper(
+                            scene: terrainScene,
+                            sceneView: $sceneView,
+                            hoveredNode: $hoveredNode,
+                            mousePosition: $mousePosition
+                        )
+                    }
                 }
             }
 
@@ -80,6 +89,18 @@ struct ContentView: View {
                     fileCount: fileCount
                 )
                 .transition(.opacity)
+            }
+
+            // Tooltip overlay
+            if let node = hoveredNode {
+                GeometryReader { geometry in
+                    TooltipView(name: node.name, path: node.path)
+                        .position(
+                            x: min(mousePosition.x + 15, geometry.size.width - 100),
+                            y: min(mousePosition.y + 15, geometry.size.height - 50)
+                        )
+                }
+                .allowsHitTesting(false)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: isLoadingTerrain)
@@ -146,5 +167,82 @@ struct ContentView: View {
             apiStatus = "offline"
             errorMessage = "API not running"
         }
+    }
+}
+
+// MARK: - SceneView Wrapper for Hover Tracking
+
+struct SceneViewWrapper: NSViewRepresentable {
+    let scene: TerrainScene
+    @Binding var sceneView: SCNView?
+    @Binding var hoveredNode: (name: String, path: String)?
+    @Binding var mousePosition: CGPoint
+
+    func makeNSView(context: Context) -> HoverTrackingSCNView {
+        let view = HoverTrackingSCNView()
+        view.scene = scene
+        view.allowsCameraControl = true
+        view.autoenablesDefaultLighting = true
+        view.backgroundColor = .clear
+
+        view.onHover = { point, nodeInfo in
+            DispatchQueue.main.async {
+                mousePosition = point
+                hoveredNode = nodeInfo
+            }
+        }
+
+        DispatchQueue.main.async {
+            sceneView = view
+        }
+
+        return view
+    }
+
+    func updateNSView(_ nsView: HoverTrackingSCNView, context: Context) {
+        nsView.terrainScene = scene
+    }
+}
+
+// Custom SCNView subclass that tracks mouse hover
+class HoverTrackingSCNView: SCNView {
+    var terrainScene: TerrainScene?
+    var onHover: ((CGPoint, (name: String, path: String)?) -> Void)?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+
+        // Remove existing tracking areas
+        trackingAreas.forEach { removeTrackingArea($0) }
+
+        // Add new tracking area
+        let trackingArea = NSTrackingArea(
+            rect: bounds,
+            options: [.activeInKeyWindow, .mouseMoved, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(trackingArea)
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+
+        let locationInView = convert(event.locationInWindow, from: nil)
+
+        guard let scene = terrainScene else {
+            onHover?(locationInView, nil)
+            return
+        }
+
+        Task { @MainActor in
+            let nodeInfo = scene.nodeInfo(at: locationInView, in: self)
+            onHover?(locationInView, nodeInfo)
+        }
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        onHover?(.zero, nil)
     }
 }

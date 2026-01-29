@@ -11,6 +11,9 @@ class FileNode: SCNNode {
             position = SCNVector3(0, 0, 0)
         }
 
+        // Store name and path in node for tooltip access
+        name = "\(file.name)|\(file.path)"
+
         // Small cube
         let cube = SCNBox(width: 0.3, height: 0.3, length: 0.3, chamferRadius: 0)
 

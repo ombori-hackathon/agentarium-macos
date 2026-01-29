@@ -185,6 +185,33 @@ class TerrainScene: SCNScene {
         try? await Task.sleep(for: .milliseconds(500))
     }
 
+    // MARK: - Hit Testing for Tooltips
+
+    @MainActor
+    func nodeInfo(at point: CGPoint, in view: SCNView) -> (name: String, path: String)? {
+        let hitResults = view.hitTest(point, options: [
+            .boundingBoxOnly: false,
+            .firstFoundOnly: true,
+            .ignoreHiddenNodes: true
+        ])
+
+        guard let firstHit = hitResults.first else { return nil }
+
+        // Walk up the node hierarchy to find a node with a name (our folder/file nodes)
+        var node: SCNNode? = firstHit.node
+        while node != nil {
+            if let nodeName = node?.name, nodeName.contains("|") {
+                let parts = nodeName.split(separator: "|", maxSplits: 1)
+                if parts.count == 2 {
+                    return (name: String(parts[0]), path: String(parts[1]))
+                }
+            }
+            node = node?.parent
+        }
+
+        return nil
+    }
+
     // MARK: - Agent Management
 
     func spawnAgent(spawn: AgentSpawn) {
