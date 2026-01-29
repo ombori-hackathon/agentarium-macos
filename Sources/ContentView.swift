@@ -1,82 +1,89 @@
 import SwiftUI
+import SceneKit
 
 struct ContentView: View {
-    @State private var items: [Item] = []
-    @State private var isLoading = false
-    @State private var apiStatus = "Checking..."
-    @State private var errorMessage: String?
+    @StateObject private var wsClient = WebSocketClient()
+    @State private var selectedPath: String?
+    @State private var terrainScene = TerrainScene()
 
     private let baseURL = "http://localhost:8000"
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("agentarium")
-                    .font(.title.bold())
+            // Header with directory picker and status
+            HStack(spacing: 16) {
+                DirectoryPicker(selectedPath: $selectedPath) { path in
+                    loadFilesystem(path: path)
+                }
+
                 Spacer()
-                Circle()
-                    .fill(apiStatus == "healthy" ? .green : .red)
-                    .frame(width: 12, height: 12)
-                Text(apiStatus)
-                    .foregroundStyle(.secondary)
+
+                StatusIndicator(isConnected: wsClient.isConnected, error: wsClient.lastError)
             }
-            .padding()
-            .background(.bar)
+            .padding(12)
+            .background(.ultraThinMaterial)
 
             Divider()
 
-            // Content
-            if let error = errorMessage {
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundStyle(.orange)
-                    Text(error)
-                        .foregroundStyle(.secondary)
-                    Text("Start API: cd services/api && uv run fastapi dev")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if isLoading {
-                ProgressView("Loading items...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ItemsTable(items: items)
-            }
+            // SceneKit view
+            SceneView(
+                scene: terrainScene,
+                options: [.allowsCameraControl, .autoenablesDefaultLighting]
+            )
         }
-        .task {
-            await loadData()
+        .onAppear {
+            setupWebSocket()
+            wsClient.connect()
+        }
+        .onDisappear {
+            wsClient.disconnect()
         }
     }
 
-    private func loadData() async {
-        isLoading = true
-        errorMessage = nil
-
-        // Check health
-        do {
-            let url = URL(string: "\(baseURL)/health")!
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let health = try JSONDecoder().decode(HealthResponse.self, from: data)
-            apiStatus = health.status
-        } catch {
-            apiStatus = "offline"
-            errorMessage = "API not running"
-            isLoading = false
-            return
+    private func setupWebSocket() {
+        wsClient.onFilesystemUpdate = { layout in
+            print("ContentView: Received filesystem update")
+            terrainScene.updateWithFilesystem(layout)
         }
 
-        // Fetch items
-        do {
-            let url = URL(string: "\(baseURL)/items")!
-            let (data, _) = try await URLSession.shared.data(from: url)
-            items = try JSONDecoder().decode([Item].self, from: data)
-        } catch {
-            errorMessage = "Failed to load items"
+        wsClient.onAgentEvent = { event in
+            print("ContentView: Agent event - \(event.hookEventName)")
         }
 
-        isLoading = false
+        wsClient.onAgentSpawn = { spawn in
+            print("ContentView: Agent spawned - \(spawn.agentId)")
+        }
+
+        wsClient.onAgentDespawn = { despawn in
+            print("ContentView: Agent despawned - \(despawn.agentId)")
+        }
+    }
+
+    private func loadFilesystem(path: String) {
+        Task {
+            do {
+                guard let encodedPath = path.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                      let url = URL(string: "\(baseURL)/api/filesystem?path=\(encodedPath)") else {
+                    print("Invalid URL")
+                    return
+                }
+
+                print("Loading filesystem from: \(url)")
+                let (data, response) = try await URLSession.shared.data(from: url)
+
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("Response status: \(httpResponse.statusCode)")
+                }
+
+                let layout = try JSONDecoder().decode(FilesystemLayout.self, from: data)
+                print("Loaded filesystem: \(layout.folders.count) folders, \(layout.files.count) files")
+
+                await MainActor.run {
+                    terrainScene.updateWithFilesystem(layout)
+                }
+            } catch {
+                print("Failed to load filesystem: \(error)")
+            }
+        }
     }
 }
