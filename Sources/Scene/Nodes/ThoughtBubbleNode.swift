@@ -1,4 +1,4 @@
-import SceneKit
+@preconcurrency import SceneKit
 import AppKit
 
 class ThoughtBubbleNode: SCNNode {

@@ -1,4 +1,4 @@
-import SceneKit
+@preconcurrency import SceneKit
 
 class AgentNode: SCNNode {
     private var bodyNode: SCNNode!
