@@ -1,8 +1,8 @@
 import SceneKit
 
 class TerrainScene: SCNScene {
-    private let cameraNode = SCNNode()
-    private let gridNode = GridNode()
+    private var folderNodes: [String: SCNNode] = [:]
+    private var fileNodes: [String: SCNNode] = [:]
 
     override init() {
         super.init()
@@ -14,48 +14,61 @@ class TerrainScene: SCNScene {
     }
 
     private func setupScene() {
-        // Set dark background color (#0a0a12)
+        // Background color: #0a0a12
         background.contents = NSColor(red: 0x0a/255.0, green: 0x0a/255.0, blue: 0x12/255.0, alpha: 1.0)
 
+        // Fog
+        fogStartDistance = 50
+        fogEndDistance = 150
+        fogColor = background.contents as! NSColor
+
         // Add grid floor
+        let gridNode = GridNode(size: 200, spacing: 10)
         rootNode.addChildNode(gridNode)
 
-        // Setup camera
-        setupCamera()
+        // Camera
+        let cameraNode = SCNNode()
+        cameraNode.camera = SCNCamera()
+        cameraNode.position = SCNVector3(0, 30, 50)
+        cameraNode.look(at: SCNVector3(0, 0, 0))
+        rootNode.addChildNode(cameraNode)
 
-        // Add ambient light
+        // Ambient light
         let ambientLight = SCNNode()
         ambientLight.light = SCNLight()
-        ambientLight.light?.type = .ambient
-        ambientLight.light?.color = NSColor(white: 0.3, alpha: 1.0)
+        ambientLight.light!.type = .ambient
+        ambientLight.light!.color = NSColor(white: 0.3, alpha: 1.0)
         rootNode.addChildNode(ambientLight)
 
-        // Add directional light
+        // Directional light
         let directionalLight = SCNNode()
         directionalLight.light = SCNLight()
-        directionalLight.light?.type = .directional
-        directionalLight.light?.color = NSColor(white: 0.5, alpha: 1.0)
+        directionalLight.light!.type = .directional
+        directionalLight.light!.color = NSColor(white: 0.5, alpha: 1.0)
         directionalLight.position = SCNVector3(10, 20, 10)
-        directionalLight.look(at: SCNVector3Zero)
+        directionalLight.look(at: SCNVector3(0, 0, 0))
         rootNode.addChildNode(directionalLight)
     }
 
-    private func setupCamera() {
-        // Create camera
-        let camera = SCNCamera()
-        camera.zNear = 0.1
-        camera.zFar = 1000
+    func updateTerrain(with layout: FilesystemLayout) {
+        // Clear existing nodes
+        folderNodes.values.forEach { $0.removeFromParentNode() }
+        fileNodes.values.forEach { $0.removeFromParentNode() }
+        folderNodes.removeAll()
+        fileNodes.removeAll()
 
-        cameraNode.camera = camera
-        cameraNode.position = SCNVector3(0, 60, 100)
-        cameraNode.look(at: SCNVector3Zero)
+        // Spawn folder nodes
+        for folder in layout.folders {
+            let folderNode = FolderNode(folder: folder)
+            rootNode.addChildNode(folderNode)
+            folderNodes[folder.path] = folderNode
+        }
 
-        rootNode.addChildNode(cameraNode)
-    }
-
-    func updateWithFilesystem(_ layout: FilesystemLayout) {
-        print("TerrainScene: Updating with filesystem data")
-        // This is where we'll add folder/file nodes in M2
-        // For M1, we just log that we received the data
+        // Spawn file nodes
+        for file in layout.files {
+            let fileNode = FileNode(file: file)
+            rootNode.addChildNode(fileNode)
+            fileNodes[file.path] = fileNode
+        }
     }
 }
