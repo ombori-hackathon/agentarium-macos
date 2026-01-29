@@ -15,16 +15,17 @@ struct WorldLoadingOverlay: View {
         VStack {
             HStack(spacing: 8) {
                 Text(message)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
 
                 if let folders = folderCount, let files = fileCount {
                     Text("(\(folders) folders, \(files) files)")
                         .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(.white.opacity(0.6))
                 }
             }
-            .padding(.top, 12)
+            .shadow(color: .black, radius: 4, x: 0, y: 1)
+            .padding(.top, 16)
 
             Spacer()
         }
