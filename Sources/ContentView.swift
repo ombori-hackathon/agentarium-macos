@@ -117,9 +117,7 @@ struct ContentView: View {
             let (data, _) = try await URLSession.shared.data(from: url)
             let layout = try JSONDecoder().decode(FilesystemLayout.self, from: data)
 
-            await MainActor.run {
-                terrainScene.updateTerrain(with: layout)
-            }
+            await terrainScene.updateTerrain(with: layout)
         } catch {
             errorMessage = "Failed to load filesystem: \(error.localizedDescription)"
         }

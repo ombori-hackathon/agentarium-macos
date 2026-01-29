@@ -51,25 +51,44 @@ class TerrainScene: SCNScene {
         rootNode.addChildNode(directionalLight)
     }
 
-    func updateTerrain(with layout: FilesystemLayout) {
+    @MainActor
+    func updateTerrain(with layout: FilesystemLayout) async {
         // Clear existing nodes
         folderNodes.values.forEach { $0.removeFromParentNode() }
         fileNodes.values.forEach { $0.removeFromParentNode() }
         folderNodes.removeAll()
         fileNodes.removeAll()
 
-        // Spawn folder nodes
-        for folder in layout.folders {
-            let folderNode = FolderNode(folder: folder)
-            rootNode.addChildNode(folderNode)
-            folderNodes[folder.path] = folderNode
+        let batchSize = 50
+
+        // Spawn folder nodes in batches
+        for batchStart in stride(from: 0, to: layout.folders.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, layout.folders.count)
+            let batch = layout.folders[batchStart..<batchEnd]
+
+            for folder in batch {
+                let folderNode = FolderNode(folder: folder)
+                rootNode.addChildNode(folderNode)
+                folderNodes[folder.path] = folderNode
+            }
+
+            // Yield to keep UI responsive
+            await Task.yield()
         }
 
-        // Spawn file nodes
-        for file in layout.files {
-            let fileNode = FileNode(file: file)
-            rootNode.addChildNode(fileNode)
-            fileNodes[file.path] = fileNode
+        // Spawn file nodes in batches
+        for batchStart in stride(from: 0, to: layout.files.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, layout.files.count)
+            let batch = layout.files[batchStart..<batchEnd]
+
+            for file in batch {
+                let fileNode = FileNode(file: file)
+                rootNode.addChildNode(fileNode)
+                fileNodes[file.path] = fileNode
+            }
+
+            // Yield to keep UI responsive
+            await Task.yield()
         }
     }
 
