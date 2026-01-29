@@ -9,5 +9,11 @@ let package = Package(
             name: "AgentariumClient",
             path: "Sources"
         ),
+        // Note: Tests require full Xcode installation (XCTest not available with CLT only)
+        // .testTarget(
+        //     name: "AgentariumClientTests",
+        //     dependencies: [],
+        //     path: "Tests"
+        // ),
     ]
 )
