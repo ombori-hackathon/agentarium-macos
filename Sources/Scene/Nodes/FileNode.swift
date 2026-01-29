@@ -24,11 +24,11 @@ class FileNode: SCNNode {
         // Small cube
         let cube = SCNBox(width: 0.3, height: 0.3, length: 0.3, chamferRadius: 0)
 
-        // Green dimmed - low opacity default state
+        // Green dimmed - default state (40% opacity)
         let material = SCNMaterial()
-        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.25)  // #00ff88 dimmed
+        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.4)
         material.lightingModel = .blinn
-        material.transparency = 0.25
+        material.transparency = 0.4
 
         cube.materials = [material]
 

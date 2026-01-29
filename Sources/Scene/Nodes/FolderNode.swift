@@ -73,13 +73,13 @@ class FolderNode: SCNNode {
 
         let geometry = SCNGeometry(sources: [vertexSource], elements: [element])
 
-        // Green glow material - dimmed default state
+        // Green glow material - dimmed default state (40% opacity)
         let material = SCNMaterial()
-        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.35)  // #00ff88 dimmed
-        material.emission.contents = NSColor(red: 0, green: 0.4, blue: 0x44 / 255.0, alpha: 0.2)
+        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.4)
+        material.emission.contents = NSColor(red: 0, green: 0.5, blue: 0x55 / 255.0, alpha: 0.25)
         material.lightingModel = .constant
         material.isDoubleSided = true
-        material.transparency = 0.35
+        material.transparency = 0.4
 
         geometry.materials = [material]
 
