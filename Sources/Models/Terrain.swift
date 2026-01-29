@@ -1,60 +1,49 @@
 import Foundation
-import SceneKit
 
-// MARK: - Terrain Models
+// MARK: - Position
+struct Position: Codable {
+    let x: Double
+    let y: Double
+    let z: Double
+}
 
-struct Folder {
+// MARK: - Folder
+struct Folder: Codable, Identifiable {
     let path: String
     let name: String
     let depth: Int
     let fileCount: Int
-    var position: SCNVector3 = SCNVector3Zero
+    let position: Position
+    let height: Double
 
-    init(from info: FolderInfo) {
-        self.path = info.path
-        self.name = info.name
-        self.depth = info.depth
-        self.fileCount = info.fileCount
+    var id: String { path }
+
+    enum CodingKeys: String, CodingKey {
+        case path, name, depth, position, height
+        case fileCount = "file_count"
     }
 }
 
-struct File {
+// MARK: - File
+struct File: Codable, Identifiable {
     let path: String
     let name: String
     let folder: String
     let size: Int
-    var position: SCNVector3 = SCNVector3Zero
+    let position: Position
 
-    init(from info: FileInfo) {
-        self.path = info.path
-        self.name = info.name
-        self.folder = info.folder
-        self.size = info.size
-    }
+    var id: String { path }
 }
 
-// MARK: - Terrain Layout
+// MARK: - FilesystemLayout
+struct FilesystemLayout: Codable {
+    let root: String
+    let folders: [Folder]
+    let files: [File]
+    let scannedAt: String
 
-class TerrainLayout {
-    private(set) var folders: [String: Folder] = [:]
-    private(set) var files: [String: File] = [:]
-    private(set) var root: String = ""
-
-    func update(from layout: FilesystemLayout) {
-        root = layout.root
-        folders = Dictionary(uniqueKeysWithValues: layout.folders.map { info in
-            (info.path, Folder(from: info))
-        })
-        files = Dictionary(uniqueKeysWithValues: layout.files.map { info in
-            (info.path, File(from: info))
-        })
-
-        print("Terrain updated: \(folders.count) folders, \(files.count) files")
-    }
-
-    func clear() {
-        folders.removeAll()
-        files.removeAll()
-        root = ""
+    enum CodingKeys: String, CodingKey {
+        case root, folders, files
+        case scannedAt = "scanned_at"
     }
 }

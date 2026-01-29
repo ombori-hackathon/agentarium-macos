@@ -1,76 +1,56 @@
 import SceneKit
 
 class GridNode: SCNNode {
-    private let spacing: CGFloat = 10.0
-    private let extent: CGFloat = 200.0
-    private let lineColor = NSColor(red: 0.0, green: 1.0, blue: 1.0, alpha: 0.4) // cyan at 40%
-
-    override init() {
+    init(size: Int = 200, spacing: Float = 10.0) {
         super.init()
-        createGrid()
+
+        let lineColor = NSColor(red: 0, green: 1, blue: 1, alpha: 0.4) // #00ffff at 40% opacity
+        let material = SCNMaterial()
+        material.diffuse.contents = lineColor
+        material.lightingModel = .constant
+        material.isDoubleSided = true
+
+        let halfSize = Float(size) / 2.0
+        let lineCount = size / Int(spacing)
+
+        // Create lines parallel to X-axis
+        for i in 0...lineCount {
+            let z = Float(i) * spacing - halfSize
+            let vertices: [SCNVector3] = [
+                SCNVector3(-halfSize, 0, z),
+                SCNVector3(halfSize, 0, z)
+            ]
+            let line = createLine(from: vertices, material: material)
+            addChildNode(line)
+        }
+
+        // Create lines parallel to Z-axis
+        for i in 0...lineCount {
+            let x = Float(i) * spacing - halfSize
+            let vertices: [SCNVector3] = [
+                SCNVector3(x, 0, -halfSize),
+                SCNVector3(x, 0, halfSize)
+            ]
+            let line = createLine(from: vertices, material: material)
+            addChildNode(line)
+        }
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func createGrid() {
-        let halfExtent = extent / 2
-        let lineCount = Int(extent / spacing) + 1
-
-        var vertices: [SCNVector3] = []
-
-        // Lines parallel to X axis (going left-right)
-        for i in 0..<lineCount {
-            let z = -halfExtent + CGFloat(i) * spacing
-            vertices.append(SCNVector3(-halfExtent, 0, z))
-            vertices.append(SCNVector3(halfExtent, 0, z))
-        }
-
-        // Lines parallel to Z axis (going forward-back)
-        for i in 0..<lineCount {
-            let x = -halfExtent + CGFloat(i) * spacing
-            vertices.append(SCNVector3(x, 0, -halfExtent))
-            vertices.append(SCNVector3(x, 0, halfExtent))
-        }
-
-        // Create geometry source
-        let vertexData = Data(bytes: vertices, count: vertices.count * MemoryLayout<SCNVector3>.size)
-        let vertexSource = SCNGeometrySource(
-            data: vertexData,
-            semantic: .vertex,
-            vectorCount: vertices.count,
-            usesFloatComponents: true,
-            componentsPerVector: 3,
-            bytesPerComponent: MemoryLayout<Float>.size,
-            dataOffset: 0,
-            dataStride: MemoryLayout<SCNVector3>.size
-        )
-
-        // Create geometry elements for line segments
-        var indices: [Int32] = []
-        for i in 0..<vertices.count {
-            indices.append(Int32(i))
-        }
-
-        let indexData = Data(bytes: indices, count: indices.count * MemoryLayout<Int32>.size)
+    private func createLine(from vertices: [SCNVector3], material: SCNMaterial) -> SCNNode {
+        let indices: [Int32] = [0, 1]
+        let source = SCNGeometrySource(vertices: vertices)
         let element = SCNGeometryElement(
-            data: indexData,
-            primitiveType: .line,
-            primitiveCount: vertices.count / 2,
-            bytesPerIndex: MemoryLayout<Int32>.size
+            indices: indices,
+            primitiveType: .line
         )
 
-        // Create geometry
-        let geometry = SCNGeometry(sources: [vertexSource], elements: [element])
-
-        // Set material
-        let material = SCNMaterial()
-        material.diffuse.contents = lineColor
-        material.lightingModel = .constant
-        material.isDoubleSided = true
+        let geometry = SCNGeometry(sources: [source], elements: [element])
         geometry.materials = [material]
 
-        self.geometry = geometry
+        return SCNNode(geometry: geometry)
     }
 }
