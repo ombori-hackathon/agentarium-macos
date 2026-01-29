@@ -345,7 +345,7 @@ class TerrainScene: SCNScene {
         }
 
         for file in files {
-            folderFiles[file.folderPath, default: []].insert(file.path)
+            folderFiles[file.folder, default: []].insert(file.path)
         }
     }
 

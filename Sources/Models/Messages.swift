@@ -68,18 +68,8 @@ struct FileInfo: Codable {
     let path: String
     let name: String
     let folder: String
-    let folderPath: String
     let size: Int
     let position: Position?
-
-    enum CodingKeys: String, CodingKey {
-        case path
-        case name
-        case folder
-        case folderPath = "folder_path"
-        case size
-        case position
-    }
 }
 
 // MARK: - Position
