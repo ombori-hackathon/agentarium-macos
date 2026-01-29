@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - WebSocket Messages
+// MARK: - WebSocket Message Types
 
 enum WSMessageType: String, Codable {
     case filesystem
@@ -47,12 +47,16 @@ struct FolderInfo: Codable {
     let name: String
     let depth: Int
     let fileCount: Int
+    let position: Position?
+    let height: Double?
 
     enum CodingKeys: String, CodingKey {
         case path
         case name
         case depth
         case fileCount = "file_count"
+        case position
+        case height
     }
 }
 
@@ -61,35 +65,10 @@ struct FileInfo: Codable {
     let name: String
     let folder: String
     let size: Int
+    let position: Position?
 }
 
-// MARK: - Agent Events
-
-struct AgentEvent: Codable {
-    let sessionId: String
-    let hookEventName: String
-    let toolName: String?
-    let toolInput: [String: AnyCodable]?
-    let cwd: String
-
-    enum CodingKeys: String, CodingKey {
-        case sessionId = "session_id"
-        case hookEventName = "hook_event_name"
-        case toolName = "tool_name"
-        case toolInput = "tool_input"
-        case cwd
-    }
-}
-
-struct AgentSpawn: Codable {
-    let agentId: String
-    let position: Position
-
-    enum CodingKeys: String, CodingKey {
-        case agentId = "agent_id"
-        case position
-    }
-}
+// MARK: - Position
 
 struct Position: Codable {
     let x: Double
@@ -97,10 +76,54 @@ struct Position: Codable {
     let z: Double
 }
 
+// MARK: - Agent Event
+
+struct AgentEvent: Codable {
+    let type: String
+    let agentId: String
+    let eventType: String
+    let targetPath: String?
+    let targetPosition: Position?
+    let thought: String?
+    let toolName: String?
+    let timestamp: Int64
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case agentId = "agent_id"
+        case eventType = "event_type"
+        case targetPath = "target_path"
+        case targetPosition = "target_position"
+        case thought
+        case toolName = "tool_name"
+        case timestamp
+    }
+}
+
+// MARK: - Agent Spawn
+
+struct AgentSpawn: Codable {
+    let type: String
+    let agentId: String
+    let position: Position
+    let color: String
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case agentId = "agent_id"
+        case position
+        case color
+    }
+}
+
+// MARK: - Agent Despawn
+
 struct AgentDespawn: Codable {
+    let type: String
     let agentId: String
 
     enum CodingKeys: String, CodingKey {
+        case type
         case agentId = "agent_id"
     }
 }
