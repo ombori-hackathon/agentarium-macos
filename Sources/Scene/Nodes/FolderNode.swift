@@ -73,12 +73,13 @@ class FolderNode: SCNNode {
 
         let geometry = SCNGeometry(sources: [vertexSource], elements: [element])
 
-        // Green glow material
+        // Green glow material - dimmed default state
         let material = SCNMaterial()
-        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 1.0)  // #00ff88
-        material.emission.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.3)
+        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.35)  // #00ff88 dimmed
+        material.emission.contents = NSColor(red: 0, green: 0.4, blue: 0x44 / 255.0, alpha: 0.2)
         material.lightingModel = .constant
         material.isDoubleSided = true
+        material.transparency = 0.35
 
         geometry.materials = [material]
 
@@ -86,16 +87,17 @@ class FolderNode: SCNNode {
     }
 
     private func setupMaterials() {
-        // Default material (existing)
+        // Default material - store reference to the dimmed material
         defaultMaterial = pyramidNode.geometry?.firstMaterial ?? SCNMaterial()
 
-        // Highlighted material (brighter emission)
+        // Highlighted material - bright and fully visible
         highlightedMaterial = SCNMaterial()
-        highlightedMaterial.diffuse.contents = NSColor(red: 0.2, green: 0.8, blue: 0.4, alpha: 0.9)
-        highlightedMaterial.emission.contents = NSColor(red: 0.3, green: 1.0, blue: 0.6, alpha: 0.8)
+        // #00ff88 full brightness
+        highlightedMaterial.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 1.0)
+        highlightedMaterial.emission.contents = NSColor(red: 0.2, green: 1.0, blue: 0.6, alpha: 0.9)
         highlightedMaterial.lightingModel = .constant
         highlightedMaterial.isDoubleSided = true
-        highlightedMaterial.transparency = 0.85
+        highlightedMaterial.transparency = 1.0
     }
 
     func setHighlighted(_ highlighted: Bool, animated: Bool = true) {

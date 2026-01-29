@@ -24,11 +24,11 @@ class FileNode: SCNNode {
         // Small cube
         let cube = SCNBox(width: 0.3, height: 0.3, length: 0.3, chamferRadius: 0)
 
-        // Green at 60% opacity
+        // Green dimmed - low opacity default state
         let material = SCNMaterial()
-        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.6)  // #00ff88 at 60%
+        material.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.25)  // #00ff88 dimmed
         material.lightingModel = .blinn
-        material.transparency = 0.6
+        material.transparency = 0.25
 
         cube.materials = [material]
 
@@ -43,15 +43,16 @@ class FileNode: SCNNode {
     }
 
     private func setupMaterials() {
-        // Default material (existing)
+        // Default material - store reference to the dimmed material
         defaultMaterial = geometry?.firstMaterial ?? SCNMaterial()
 
-        // Highlighted material (brighter emission)
+        // Highlighted material - bright and visible
         highlightedMaterial = SCNMaterial()
-        highlightedMaterial.diffuse.contents = NSColor(red: 0.2, green: 0.8, blue: 0.4, alpha: 0.9)
-        highlightedMaterial.emission.contents = NSColor(red: 0.3, green: 1.0, blue: 0.6, alpha: 0.8)
+        // #00ff88 bright
+        highlightedMaterial.diffuse.contents = NSColor(red: 0, green: 1, blue: 0x88 / 255.0, alpha: 0.9)
+        highlightedMaterial.emission.contents = NSColor(red: 0.2, green: 1.0, blue: 0.6, alpha: 0.7)
         highlightedMaterial.lightingModel = .blinn
-        highlightedMaterial.transparency = 0.85
+        highlightedMaterial.transparency = 0.9
     }
 
     func setHighlighted(_ highlighted: Bool, animated: Bool = true) {
