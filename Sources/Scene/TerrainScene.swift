@@ -10,6 +10,9 @@ class TerrainScene: SCNScene {
     private var folderFiles: [String: Set<String>] = [:]  // folder path -> file paths
     private var currentlyHighlighted: Set<String> = []
 
+    // Label tracking
+    private var currentlyLabeledNode: SCNNode?
+
     override init() {
         super.init()
         setupScene()
@@ -412,5 +415,47 @@ class TerrainScene: SCNScene {
             }
         }
         currentlyHighlighted.removeAll()
+    }
+
+    // MARK: - Label Management
+
+    @MainActor
+    func showLabelForNode(at point: CGPoint, in view: SCNView) {
+        let hitResults = view.hitTest(point, options: [:])
+        var foundNode: SCNNode?
+
+        for result in hitResults {
+            var node: SCNNode? = result.node
+            while let current = node {
+                if current is FolderNode || current is FileNode {
+                    foundNode = current
+                    break
+                }
+                node = current.parent
+            }
+            if foundNode != nil { break }
+        }
+
+        // Hide previous label if different node
+        if let prev = currentlyLabeledNode, prev != foundNode {
+            (prev as? FolderNode)?.hideLabel()
+            (prev as? FileNode)?.hideLabel()
+        }
+
+        // Show new label
+        if let node = foundNode {
+            (node as? FolderNode)?.showLabel()
+            (node as? FileNode)?.showLabel()
+            currentlyLabeledNode = node
+        } else {
+            currentlyLabeledNode = nil
+        }
+    }
+
+    @MainActor
+    func hideAllLabels() {
+        (currentlyLabeledNode as? FolderNode)?.hideLabel()
+        (currentlyLabeledNode as? FileNode)?.hideLabel()
+        currentlyLabeledNode = nil
     }
 }

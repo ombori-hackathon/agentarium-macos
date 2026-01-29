@@ -5,6 +5,7 @@ class FileNode: SCNNode {
     let filePath: String
     private var defaultMaterial: SCNMaterial!
     private var highlightedMaterial: SCNMaterial!
+    private var labelNode: LabelNode?
 
     init(file: FileInfo) {
         self.fileName = file.name
@@ -36,6 +37,9 @@ class FileNode: SCNNode {
 
         // Setup highlight materials
         setupMaterials()
+
+        // Setup label
+        setupLabel()
     }
 
     required init?(coder: NSCoder) {
@@ -65,5 +69,19 @@ class FileNode: SCNNode {
         } else {
             geometry?.materials = [target]
         }
+    }
+
+    private func setupLabel() {
+        labelNode = LabelNode(text: fileName, yOffset: 0.8, fontSize: 11)
+        labelNode?.isHidden = true
+        addChildNode(labelNode!)
+    }
+
+    func showLabel() {
+        labelNode?.isHidden = false
+    }
+
+    func hideLabel() {
+        labelNode?.isHidden = true
     }
 }
