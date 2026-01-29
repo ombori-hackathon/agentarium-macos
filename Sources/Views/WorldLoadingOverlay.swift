@@ -12,28 +12,24 @@ struct WorldLoadingOverlay: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            ProgressView()
-                .scaleEffect(2)
-                .progressViewStyle(CircularProgressViewStyle(tint: .orange))
+        VStack {
+            HStack(spacing: 8) {
+                Text(message)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.8))
 
-            Text(message)
-                .font(.title2)
-                .foregroundStyle(.white)
-
-            if let folders = folderCount, let files = fileCount {
-                Text("\(folders) folders, \(files) files")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if let folders = folderCount, let files = fileCount {
+                    Text("(\(folders) folders, \(files) files)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
             }
+            .padding(.top, 12)
+
+            Spacer()
         }
-        .padding(40)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(0.3))
+        .allowsHitTesting(false)
     }
 }
 
