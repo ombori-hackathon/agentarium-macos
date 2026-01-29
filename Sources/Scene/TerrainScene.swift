@@ -133,7 +133,8 @@ class TerrainScene: SCNScene {
                 riseAction.timingMode = .easeOut
                 let fadeIn = SCNAction.fadeIn(duration: 0.2)
                 let delayAction = SCNAction.wait(duration: delay)
-                node.runAction(SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]))
+                // Use completion handler version to fire-and-forget
+                node.runAction(SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]), completionHandler: nil)
                 delay += staggerIncrement
             }
         }
@@ -148,7 +149,8 @@ class TerrainScene: SCNScene {
                 riseAction.timingMode = .easeOut
                 let fadeIn = SCNAction.fadeIn(duration: 0.2)
                 let delayAction = SCNAction.wait(duration: delay)
-                node.runAction(SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]))
+                // Use completion handler version to fire-and-forget
+                node.runAction(SCNAction.sequence([delayAction, SCNAction.group([riseAction, fadeIn])]), completionHandler: nil)
                 delay += staggerIncrement
             }
         }
